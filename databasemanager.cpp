@@ -869,7 +869,6 @@ void DatabaseManager::compareData()
 {
     const auto &originalTools = originalDataStorage.getToolList();
     const auto &currentTools = currentDataStorage.getToolList();
-
     for (int i = 0; i < originalTools.size(); ++i) {
         if (!(originalTools[i] == currentTools[i])) {
             qDebug() << "Difference found in Tools at index" << i;
@@ -878,12 +877,36 @@ void DatabaseManager::compareData()
 
     const auto &originalSensors = originalDataStorage.getSensorList();
     const auto &currentSensors = currentDataStorage.getSensorList();
-
     for (int i = 0; i < originalSensors.size(); ++i) {
         if (!(originalSensors[i] == currentSensors[i])) {
             qDebug() << "Difference found in Sensors at index" << i;
         }
     }
 
-    // Implement similar comparison for MainMnemonic, AdditionalMnemonic, and ConversionFormula
+    // Compare MainMnemonic objects
+    const auto &originalMainMnemonics = originalDataStorage.getMainMnemonicList();
+    const auto &currentMainMnemonics = currentDataStorage.getMainMnemonicList();
+    for (int i = 0; i < originalMainMnemonics.size(); ++i) {
+        if (!(originalMainMnemonics[i] == currentMainMnemonics[i])) {
+            qDebug() << "Difference found in MainMnemonics at index" << i;
+        }
+    }
+
+    // Compare AdditionalMnemonic objects
+    const auto &originalAdditionalMnemonics = originalDataStorage.getAdditionalMnemonicList();
+    const auto &currentAdditionalMnemonics = currentDataStorage.getAdditionalMnemonicList();
+    for (int i = 0; i < originalAdditionalMnemonics.size(); ++i) {
+        if (!(originalAdditionalMnemonics[i] == currentAdditionalMnemonics[i])) {
+            qDebug() << "Difference found in AdditionalMnemonics at index" << i;
+        }
+    }
+
+    // Compare ConversionFormula objects
+    const auto &originalConversionFormulas = originalDataStorage.getConversionFormulaList();
+    const auto &currentConversionFormulas = currentDataStorage.getConversionFormulaList();
+    for (int i = 0; i < originalConversionFormulas.size(); ++i) {
+        if (!(originalConversionFormulas[i] == currentConversionFormulas[i])) {
+            qDebug() << "Difference found in ConversionFormulas at index" << i;
+        }
+    }
 }
