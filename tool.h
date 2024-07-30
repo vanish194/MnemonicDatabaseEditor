@@ -7,66 +7,66 @@
 class Tool
 {
 public:
-    static Tool *create(int toolId,
-                        int produserId,
-                        int toolDescriptionId,
-                        const QString &toolName,
-                        const QString &produserName,
-                        const QString &description,
-                        const QString &length,
-                        const QString &outerDiameter,
-                        const QString &innerDiameter,
-                        const QByteArray &image);
+    Tool(int id,
+         const QString &name,
+         int descId,
+         const QString &desc,
+         const QString &len,
+         const QString &outDia,
+         const QString &inDia,
+         const QByteArray &img,
+         int prodId,
+         const QString &prodName);
 
-    Tool(int toolId,
-         int produserId,
-         int toolDescriptionId,
-         const QString &toolName,
-         const QString &produserName,
-         const QString &description,
-         const QString &length,
-         const QString &outerDiameter,
-         const QString &innerDiameter,
-         const QByteArray &image);
+    static Tool create(int id,
+                       const QString &name,
+                       int descId,
+                       const QString &desc,
+                       const QString &len,
+                       const QString &outDia,
+                       const QString &inDia,
+                       const QByteArray &img,
+                       int prodId,
+                       const QString &prodName)
+    {
+        return Tool(id, name, descId, desc, len, outDia, inDia, img, prodId, prodName);
+    }
 
-    // Getters
     int getToolId() const;
-    int getProduserId() const;
-    int getToolDescriptionId() const;
     QString getToolName() const;
-    QString getProduserName() const;
+    int getToolDescriptionId() const;
     QString getDescription() const;
     QString getLength() const;
     QString getOuterDiameter() const;
     QString getInnerDiameter() const;
     QByteArray getImage() const;
+    int getProduserId() const;
+    QString getProduserName() const;
 
-    // Setters
-    void setToolId(int newToolId);
-    void setProduserId(int newProduserId);
-    void setToolDescriptionId(int newToolDescriptionId);
-    void setToolName(const QString &newToolName);
-    void setProduserName(const QString &newProduserName);
-    void setDescription(const QString &newDescription);
-    void setLength(const QString &newLength);
-    void setOuterDiameter(const QString &newOuterDiameter);
-    void setInnerDiameter(const QString &newInnerDiameter);
-    void setImage(const QByteArray &newImage);
+    void setToolId(int id);
+    void setToolName(const QString &name);
+    void setToolDescriptionId(int id);
+    void setDescription(const QString &desc);
+    void setLength(const QString &len);
+    void setOuterDiameter(const QString &outDia);
+    void setInnerDiameter(const QString &inDia);
+    void setImage(const QByteArray &img);
+    void setProduserId(int id);
+    void setProduserName(const QString &name);
 
-    // Comparison operator
     bool operator==(const Tool &other) const;
 
 private:
     int toolId;
-    int produserId;
-    int toolDescriptionId;
     QString toolName;
-    QString produserName;
+    int toolDescriptionId;
     QString description;
     QString length;
     QString outerDiameter;
     QString innerDiameter;
     QByteArray image;
+    int produserId;
+    QString produserName;
 };
 
 #endif // TOOL_H

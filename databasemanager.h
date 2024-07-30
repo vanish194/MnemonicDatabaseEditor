@@ -5,6 +5,7 @@
 #include <QSqlDatabase>
 #include <QSqlError>
 #include <QSqlQuery>
+#include <QStandardItemModel>
 #include <QString>
 #include "databasestorage.h"
 
@@ -23,7 +24,6 @@ public:
 
     DatabaseStorage *loadDataFromDatabase();
 
-    // Methods for adding, updating, and deleting data
     bool addTool(const Tool &tool);
     bool updateTool(const Tool &tool);
     bool deleteTool(int toolId);
@@ -44,9 +44,23 @@ public:
     bool updateConversionFormula(const ConversionFormula &conversionFormula);
     bool deleteConversionFormula(int formulaId);
 
+    void compareData();
+
+    QStandardItemModel *getModel() const;
+    QStandardItemModel *getTreeModel() const;
+
 private:
     QSqlDatabase db;
     DatabaseStorage *dbStorage;
+    DatabaseStorage originalDataStorage;
+    DatabaseStorage currentDataStorage;
+
+    QStandardItemModel *model;
+    QStandardItemModel *treeModel;
+
+    void createTreeModel();
+    bool isIdOccupied(const QString &tableName, const QString &idColumn, int id);
+    int generateUniqueId(const QString &tableName, const QString &idColumn);
 };
 
 #endif // DATABASEMANAGER_H

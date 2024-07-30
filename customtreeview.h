@@ -4,7 +4,6 @@
 #include <QAction>
 #include <QContextMenuEvent>
 #include <QMenu>
-#include <QStandardItemModel>
 #include <QTreeView>
 
 class CustomTreeView : public QTreeView
@@ -12,22 +11,21 @@ class CustomTreeView : public QTreeView
     Q_OBJECT
 
 public:
-    explicit CustomTreeView(QWidget *parent = nullptr);
-
-signals:
-    void contextMenuRequested(const QPoint &pos, const QModelIndex &index);
+    CustomTreeView(QWidget *parent = nullptr);
 
 protected:
     void contextMenuEvent(QContextMenuEvent *event) override;
 
-private:
-    QMenu *contextMenu;
-    QAction *actionEdit;
-    QAction *actionDelete;
-
 private slots:
+    void onAdd();
     void onEdit();
     void onDelete();
+
+private:
+    QMenu *contextMenu;
+    QAction *addAction;
+    QAction *editAction;
+    QAction *deleteAction;
 };
 
 #endif // CUSTOMTREEVIEW_H

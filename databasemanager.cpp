@@ -2,6 +2,8 @@
 
 DatabaseManager::DatabaseManager(DatabaseStorage *storage)
     : dbStorage(storage)
+    , model(new QStandardItemModel)
+    , treeModel(new QStandardItemModel)
 {}
 
 bool DatabaseManager::openDatabase(const QString &dbName)
@@ -10,7 +12,7 @@ bool DatabaseManager::openDatabase(const QString &dbName)
     db.setDatabaseName(dbName);
 
     if (!db.open()) {
-        qDebug() << "Error: Could not open database.";
+        qDebug() << "Error: Could not open database." << db.lastError().text();
         return false;
     }
 
@@ -24,331 +26,253 @@ void DatabaseManager::closeDatabase()
 
 bool DatabaseManager::loadAdditionalMnemonics()
 {
-    QSqlQuery query;
-    QString queryString = R"(
-        SELECT
-            additional_mnemonics.additional_mnemonic_id,
-            main_mnemonics.main_mnemonic_id,
-            companies.company_id,
-            units.unit_id,
-            types_of_units.type_id,
-            types_of_units.type_name,
-            units.unit_name,
-            additional_mnemonics.additional_mnemonic_name,
-            main_mnemonics.main_mnemonic_name,
-            companies.company_name
-        FROM
-            additional_mnemonics
-            LEFT OUTER JOIN companies ON (additional_mnemonics.company_id = companies.company_id)
-            LEFT OUTER JOIN main_mnemonics ON (additional_mnemonics.main_mnemonic_id = main_mnemonics.main_mnemonic_id)
-            LEFT OUTER JOIN units ON (additional_mnemonics.unit_id = units.unit_id)
-            LEFT OUTER JOIN types_of_units ON (units.type_id = types_of_units.type_id)
-    )";
-
-    if (!query.exec(queryString)) {
-        qDebug() << "Failed to execute query:" << query.lastError().text();
-        return false;
-    }
-
+    QSqlQuery query("SELECT am.*, c.company_name, u.unit_name, t.type_name "
+                    "FROM additional_mnemonics am "
+                    "LEFT JOIN companies c ON am.company_id = c.company_id "
+                    "LEFT JOIN units u ON am.unit_id = u.unit_id "
+                    "LEFT JOIN types_of_units t ON u.type_id = t.type_id");
     while (query.next()) {
-        int additionalMnemonicId = query.value(0).toInt();
-        int mainMnemonicId = query.value(1).toInt();
-        int companyId = query.value(2).toInt();
-        int unitId = query.value(3).toInt();
-        int typeId = query.value(4).toInt();
-        QString typeName = query.value(5).toString();
-        QString unitName = query.value(6).toString();
-        QString additionalMnemonicName = query.value(7).toString();
-        QString mainMnemonicName = query.value(8).toString();
-        QString companyName = query.value(9).toString();
+        int id = query.value("additional_mnemonic_id").toInt();
+        QString name = query.value("additional_mnemonic_name").toString();
+        int companyId = query.value("company_id").toInt();
+        int mainMnemonicId = query.value("main_mnemonic_id").toInt();
+        int unitId = query.value("unit_id").toInt();
+        QString companyName = query.value("company_name").toString();
+        QString unitName = query.value("unit_name").toString();
+        int typeId = query.value("type_id").toInt();
+        QString typeName = query.value("type_name").toString();
 
-        AdditionalMnemonic *additionalMnemonic = AdditionalMnemonic::create(additionalMnemonicId,
-                                                                            mainMnemonicId,
-                                                                            companyId,
-                                                                            unitId,
-                                                                            typeId,
-                                                                            typeName,
-                                                                            unitName,
-                                                                            additionalMnemonicName,
-                                                                            mainMnemonicName,
-                                                                            companyName);
-        dbStorage->addAdditionalMnemonic(additionalMnemonic);
+        dbStorage->addAdditionalMnemonic(AdditionalMnemonic::create(
+            id, name, companyId, mainMnemonicId, unitId, companyName, unitName, typeId, typeName));
     }
-
     return true;
 }
 
 bool DatabaseManager::loadConversionFormulas()
 {
-    QSqlQuery query;
-    QString queryString = R"(
-        SELECT
-            conversion_formulas.formula_id,
-            conversion_formulas.inital_unit_id,
-            conversion_formulas.derived_unit_id,
-            conversion_formulas.formula,
-            u1.unit_name AS inital_unit_name,
-            u2.unit_name AS derived_unit_name
-        FROM
-            conversion_formulas
-            INNER JOIN units u1 ON conversion_formulas.inital_unit_id = u1.unit_id
-            INNER JOIN units u2 ON conversion_formulas.derived_unit_id = u2.unit_id
-    )";
-
-    if (!query.exec(queryString)) {
-        qDebug() << "Failed to execute query:" << query.lastError().text();
+    QSqlQuery query("SELECT * FROM conversion_formulas");
+    if (!query.exec()) {
+        qDebug() << "Error loading conversion formulas:" << query.lastError().text();
         return false;
     }
 
     while (query.next()) {
-        int formulaId = query.value(0).toInt();
-        int initalUnitId = query.value(1).toInt();
-        int derivedUnitId = query.value(2).toInt();
-        QString formula = query.value(3).toString();
-        QString initalUnitName = query.value(4).toString();
-        QString derivedUnitName = query.value(5).toString();
+        int id = query.value("formula_id").toInt();
+        QString formula = query.value("formula").toString();
+        int initialUnitId = query.value("inital_unit_id").toInt();
+        int derivedUnitId = query.value("derived_unit_id").toInt();
 
-        ConversionFormula *conversionFormula = ConversionFormula::create(formulaId,
-                                                                         initalUnitId,
-                                                                         derivedUnitId,
-                                                                         formula,
-                                                                         initalUnitName,
-                                                                         derivedUnitName);
-        dbStorage->addConversionFormula(conversionFormula);
+        dbStorage->addConversionFormula(
+            ConversionFormula::create(id, formula, initialUnitId, derivedUnitId));
     }
-
     return true;
 }
 
 bool DatabaseManager::loadMainMnemonics()
 {
-    QSqlQuery query;
-    QString queryString = R"(
-        SELECT
-            sensors.sensor_id,
-            main_mnemonics.main_mnemonic_id,
-            units.unit_id,
-            types_of_units.type_id,
-            types_of_units.type_name,
-            units.unit_name,
-            main_mnemonics.main_mnemonic_name,
-            main_mnemonics.main_mnemonic_description,
-            sensors.sensor_name
-        FROM
-            units
-            INNER JOIN types_of_units ON (units.type_id = types_of_units.type_id)
-            INNER JOIN main_mnemonics ON (units.unit_id = main_mnemonics.unit_id)
-            INNER JOIN sensors ON (main_mnemonics.sensor_id = sensors.sensor_id)
-    )";
-
-    if (!query.exec(queryString)) {
-        qDebug() << "Failed to execute query:" << query.lastError().text();
-        return false;
-    }
-
+    QSqlQuery query("SELECT mm.*, u.unit_name, t.type_name "
+                    "FROM main_mnemonics mm "
+                    "LEFT JOIN units u ON mm.unit_id = u.unit_id "
+                    "LEFT JOIN types_of_units t ON u.type_id = t.type_id");
     while (query.next()) {
-        int sensorId = query.value(0).toInt();
-        int mainMnemonicId = query.value(1).toInt();
-        int unitId = query.value(2).toInt();
-        int typeId = query.value(3).toInt();
-        QString typeName = query.value(4).toString();
-        QString unitName = query.value(5).toString();
-        QString mainMnemonicName = query.value(6).toString();
-        QString mainMnemonicDescription = query.value(7).toString();
-        QString sensorName = query.value(8).toString();
+        int id = query.value("main_mnemonic_id").toInt();
+        QString name = query.value("main_mnemonic_name").toString();
+        QString description = query.value("main_mnemonic_description").toString();
+        int sensorId = query.value("sensor_id").toInt();
+        int unitId = query.value("unit_id").toInt();
+        int typeId = query.value("type_id").toInt();
+        QString typeName = query.value("type_name").toString();
+        QString unitName = query.value("unit_name").toString();
 
-        MainMnemonic *mainMnemonic = MainMnemonic::create(sensorId,
-                                                          mainMnemonicId,
-                                                          unitId,
-                                                          typeId,
-                                                          typeName,
-                                                          unitName,
-                                                          mainMnemonicName,
-                                                          mainMnemonicDescription,
-                                                          sensorName);
-        dbStorage->addMainMnemonic(mainMnemonic);
+        dbStorage->addMainMnemonic(
+            MainMnemonic::create(id, name, description, sensorId, unitId, typeId, typeName, unitName));
     }
-
     return true;
 }
 
 bool DatabaseManager::loadSensors()
 {
-    QSqlQuery query;
-    QString queryString = R"(
-        SELECT
-            sensors.sensor_id,
-            sensors.tool_id,
-            methods.method_id,
-            sensor_descriptions.sensor_description_id,
-            sensors.sensor_name,
-            methods.method_name,
-            tools.tool_name,
-            sensor_descriptions.sensor_description,
-            sensor_descriptions.offset
-        FROM
-            sensors
-            INNER JOIN sensor_descriptions ON (sensors.sensor_description_id = sensor_descriptions.sensor_description_id)
-            INNER JOIN methods ON (sensors.method_id = methods.method_id)
-            INNER JOIN tools ON (sensors.tool_id = tools.tool_id)
-    )";
-
-    if (!query.exec(queryString)) {
-        qDebug() << "Failed to execute query:" << query.lastError().text();
-        return false;
-    }
-
+    QSqlQuery query(
+        "SELECT s.*, sd.sensor_description, sd.offset, m.method_name "
+        "FROM sensors s "
+        "LEFT JOIN sensor_descriptions sd ON s.sensor_description_id = sd.sensor_description_id "
+        "LEFT JOIN methods m ON s.method_id = m.method_id");
     while (query.next()) {
-        int sensorId = query.value(0).toInt();
-        int toolId = query.value(1).toInt();
-        int methodId = query.value(2).toInt();
-        int sensorDescriptionId = query.value(3).toInt();
-        QString sensorName = query.value(4).toString();
-        QString methodName = query.value(5).toString();
-        QString toolName = query.value(6).toString();
-        QString sensorDescription = query.value(7).toString();
-        QString offset = query.value(8).toString();
+        int id = query.value("sensor_id").toInt();
+        QString name = query.value("sensor_name").toString();
+        int toolId = query.value("tool_id").toInt();
+        int methodId = query.value("method_id").toInt();
+        int descId = query.value("sensor_description_id").toInt();
+        QString desc = query.value("sensor_description").toString();
+        QString offset = query.value("offset").toString();
+        QString methodName = query.value("method_name").toString();
 
-        Sensor *sensor = Sensor::create(sensorId,
-                                        toolId,
-                                        methodId,
-                                        sensorDescriptionId,
-                                        sensorName,
-                                        methodName,
-                                        toolName,
-                                        sensorDescription,
-                                        offset);
-        dbStorage->addSensor(sensor);
+        dbStorage->addSensor(
+            Sensor::create(id, name, toolId, methodId, descId, desc, offset, methodName));
     }
-
     return true;
 }
 
 bool DatabaseManager::loadTools()
 {
-    QSqlQuery query;
-    QString queryString = R"(
-        SELECT
-            tools.tool_id,
-            produsers.produser_id,
-            tools.tool_description_id,
-            tools.tool_name,
-            produsers.produser_name,
-            tool_descriptions.description,
-            tool_descriptions."length",
-            tool_descriptions.outer_diameter,
-            tool_descriptions.inner_diameter,
-            tool_descriptions.image
-        FROM
-            tools
-            LEFT OUTER JOIN tool_descriptions ON (tools.tool_description_id = tool_descriptions.tool_description_id)
-            LEFT OUTER JOIN produsers ON (tool_descriptions.produser_id = produsers.produser_id)
-    )";
-
-    if (!query.exec(queryString)) {
-        qDebug() << "Failed to execute query:" << query.lastError().text();
-        return false;
-    }
-
+    QSqlQuery query(
+        "SELECT t.*, td.description, td.length, td.outer_diameter, td.inner_diameter, td.image, "
+        "p.produser_name "
+        "FROM tools t "
+        "LEFT JOIN tool_descriptions td ON t.tool_description_id = td.tool_description_id "
+        "LEFT JOIN produsers p ON td.produser_id = p.produser_id");
     while (query.next()) {
-        int toolId = query.value(0).toInt();
-        int produserId = query.value(1).toInt();
-        int toolDescriptionId = query.value(2).toInt();
-        QString toolName = query.value(3).toString();
-        QString produserName = query.value(4).toString();
-        QString description = query.value(5).toString();
-        QString length = query.value(6).toString();
-        QString outerDiameter = query.value(7).toString();
-        QString innerDiameter = query.value(8).toString();
-        QByteArray image = query.value(9).toByteArray();
+        int id = query.value("tool_id").toInt();
+        QString name = query.value("tool_name").toString();
+        int descId = query.value("tool_description_id").toInt();
+        QString description = query.value("description").toString();
+        QString length = query.value("length").toString();
+        QString outerDiameter = query.value("outer_diameter").toString();
+        QString innerDiameter = query.value("inner_diameter").toString();
+        QByteArray image = query.value("image").toByteArray();
+        int produserId = query.value("produser_id").toInt();
+        QString produserName = query.value("produser_name").toString();
 
-        Tool *tool = Tool::create(toolId,
-                                  produserId,
-                                  toolDescriptionId,
-                                  toolName,
-                                  produserName,
-                                  description,
-                                  length,
-                                  outerDiameter,
-                                  innerDiameter,
-                                  image);
-        dbStorage->addTool(tool);
+        dbStorage->addTool(Tool::create(id,
+                                        name,
+                                        descId,
+                                        description,
+                                        length,
+                                        outerDiameter,
+                                        innerDiameter,
+                                        image,
+                                        produserId,
+                                        produserName));
     }
-
     return true;
 }
 
 DatabaseStorage *DatabaseManager::loadDataFromDatabase()
 {
-    DatabaseStorage *newStorage = new DatabaseStorage();
-
-    // Load data into newStorage
-    // Note: We assume the database is already opened
-
-    QSqlQuery query;
-
-    // Load additional mnemonics
-    QString queryString = R"(
-        SELECT
-            additional_mnemonics.additional_mnemonic_id,
-            main_mnemonics.main_mnemonic_id,
-            companies.company_id,
-            units.unit_id,
-            types_of_units.type_id,
-            types_of_units.type_name,
-            units.unit_name,
-            additional_mnemonics.additional_mnemonic_name,
-            main_mnemonics.main_mnemonic_name,
-            companies.company_name
-        FROM
-            additional_mnemonics
-            LEFT OUTER JOIN companies ON (additional_mnemonics.company_id = companies.company_id)
-            LEFT OUTER JOIN main_mnemonics ON (additional_mnemonics.main_mnemonic_id = main_mnemonics.main_mnemonic_id)
-            LEFT OUTER JOIN units ON (additional_mnemonics.unit_id = units.unit_id)
-            LEFT OUTER JOIN types_of_units ON (units.type_id = types_of_units.type_id)
-    )";
-
-    if (!query.exec(queryString)) {
-        qDebug() << "Failed to execute query:" << query.lastError().text();
-        delete newStorage;
+    dbStorage->clearAll();
+    if (!loadTools())
         return nullptr;
-    }
+    if (!loadSensors())
+        return nullptr;
+    if (!loadMainMnemonics())
+        return nullptr;
+    if (!loadAdditionalMnemonics())
+        return nullptr;
+    if (!loadConversionFormulas())
+        return nullptr;
 
-    while (query.next()) {
-        int additionalMnemonicId = query.value(0).toInt();
-        int mainMnemonicId = query.value(1).toInt();
-        int companyId = query.value(2).toInt();
-        int unitId = query.value(3).toInt();
-        int typeId = query.value(4).toInt();
-        QString typeName = query.value(5).toString();
-        QString unitName = query.value(6).toString();
-        QString additionalMnemonicName = query.value(7).toString();
-        QString mainMnemonicName = query.value(8).toString();
-        QString companyName = query.value(9).toString();
-
-        AdditionalMnemonic *additionalMnemonic = AdditionalMnemonic::create(additionalMnemonicId,
-                                                                            mainMnemonicId,
-                                                                            companyId,
-                                                                            unitId,
-                                                                            typeId,
-                                                                            typeName,
-                                                                            unitName,
-                                                                            additionalMnemonicName,
-                                                                            mainMnemonicName,
-                                                                            companyName);
-        newStorage->addAdditionalMnemonic(additionalMnemonic);
-    }
-
-    // Load other data (sensors, tools, main mnemonics, conversion formulas) in similar manner
-
-    return newStorage;
+    originalDataStorage = *dbStorage;
+    currentDataStorage = *dbStorage;
+    createTreeModel();
+    return dbStorage;
 }
-// Methods for adding, updating, and deleting Tools
-bool DatabaseManager::addTool(const Tool &tool)
+QStandardItemModel *DatabaseManager::getModel() const
+{
+    return model;
+}
+
+QStandardItemModel *DatabaseManager::getTreeModel() const
+{
+    return treeModel;
+}
+
+void DatabaseManager::createTreeModel()
+{
+    treeModel->clear();
+    QMap<QString, QMap<QString, QMap<QString, QStringList>>> data_hierarchy;
+
+    const QList<Tool> &tools = dbStorage->getToolList();
+    const QList<Sensor> &sensors = dbStorage->getSensorList();
+    const QList<MainMnemonic> &mainMnemonics = dbStorage->getMainMnemonicList();
+    const QList<AdditionalMnemonic> &additionalMnemonics = dbStorage->getAdditionalMnemonicList();
+
+    for (const Tool &tool : tools) {
+        QString toolName = tool.getToolName();
+        data_hierarchy[toolName]; // Ensure entry for tool exists
+
+        for (const Sensor &sensor : sensors) {
+            if (sensor.getToolId() == tool.getToolId()) {
+                QString sensorName = sensor.getSensorName();
+                data_hierarchy[toolName][sensorName]; // Ensure entry for sensor exists
+
+                for (const MainMnemonic &mainMnemonic : mainMnemonics) {
+                    if (mainMnemonic.getSensorId() == sensor.getSensorId()) {
+                        QString mainMnemonicName = mainMnemonic.getMainMnemonicName();
+                        data_hierarchy[toolName][sensorName]
+                                      [mainMnemonicName]; // Ensure entry for main mnemonic exists
+
+                        for (const AdditionalMnemonic &additionalMnemonic : additionalMnemonics) {
+                            if (additionalMnemonic.getMainMnemonicId()
+                                == mainMnemonic.getMainMnemonicId()) {
+                                QString additionalMnemonicName = additionalMnemonic
+                                                                     .getAdditionalMnemonicName();
+                                data_hierarchy[toolName][sensorName][mainMnemonicName].append(
+                                    additionalMnemonicName);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    for (auto tool_iter = data_hierarchy.begin(); tool_iter != data_hierarchy.end(); ++tool_iter) {
+        QStandardItem *tool_item = new QStandardItem(tool_iter.key());
+        treeModel->appendRow(tool_item);
+
+        for (auto sensor_iter = tool_iter.value().begin(); sensor_iter != tool_iter.value().end();
+             ++sensor_iter) {
+            QStandardItem *sensor_item = new QStandardItem(sensor_iter.key());
+            tool_item->appendRow(sensor_item);
+
+            for (auto main_iter = sensor_iter.value().begin();
+                 main_iter != sensor_iter.value().end();
+                 ++main_iter) {
+                QStandardItem *main_item = new QStandardItem(main_iter.key());
+                sensor_item->appendRow(main_item);
+
+                for (const QString &additional : main_iter.value()) {
+                    QStandardItem *additional_item = new QStandardItem(additional);
+                    main_item->appendRow(additional_item);
+                }
+            }
+        }
+    }
+}
+
+bool DatabaseManager::isIdOccupied(const QString &tableName, const QString &idColumn, int id)
 {
     QSqlQuery query;
+    query.prepare(QString("SELECT COUNT(*) FROM %1 WHERE %2 = :id").arg(tableName).arg(idColumn));
+    query.bindValue(":id", id);
+    if (!query.exec()) {
+        qDebug() << "Error checking ID occupation:" << query.lastError().text();
+        return false;
+    }
+    query.next();
+    return query.value(0).toInt() > 0;
+}
 
-    // Add produser if not exists
+int DatabaseManager::generateUniqueId(const QString &tableName, const QString &idColumn)
+{
+    QSqlQuery query;
+    int id = 1;
+    query.prepare(QString("SELECT MAX(%1) FROM %2").arg(idColumn).arg(tableName));
+    if (query.exec() && query.next()) {
+        id = query.value(0).toInt() + 1;
+    }
+    return id;
+}
+
+bool DatabaseManager::addTool(const Tool &tool)
+{
+    int toolId = tool.getToolId();
+    while (isIdOccupied("tools", "tool_id", toolId)) {
+        toolId = generateUniqueId("tools", "tool_id");
+    }
+
+    QSqlQuery query;
+
     query.prepare("INSERT OR IGNORE INTO produsers (produser_id, produser_name) VALUES "
                   "(:produser_id, :produser_name)");
     query.bindValue(":produser_id", tool.getProduserId());
@@ -359,11 +283,11 @@ bool DatabaseManager::addTool(const Tool &tool)
         return false;
     }
 
-    // Add tool description first
-    query.prepare(
-        "INSERT INTO tool_descriptions (description, length, outer_diameter, inner_diameter, "
-        "image, produser_id) "
-        "VALUES (:description, :length, :outer_diameter, :inner_diameter, :image, :produser_id)");
+    query.prepare("INSERT INTO tool_descriptions (tool_description_id, description, length, "
+                  "outer_diameter, inner_diameter, image, produser_id) "
+                  "VALUES (:tool_description_id, :description, :length, :outer_diameter, "
+                  ":inner_diameter, :image, :produser_id)");
+    query.bindValue(":tool_description_id", tool.getToolDescriptionId());
     query.bindValue(":description", tool.getDescription());
     query.bindValue(":length", tool.getLength());
     query.bindValue(":outer_diameter", tool.getOuterDiameter());
@@ -376,19 +300,28 @@ bool DatabaseManager::addTool(const Tool &tool)
         return false;
     }
 
-    int toolDescriptionId = query.lastInsertId().toInt();
-
-    // Add tool
-    query.prepare("INSERT INTO tools (tool_name, tool_description_id) "
-                  "VALUES (:tool_name, :tool_description_id)");
+    query.prepare("INSERT INTO tools (tool_id, tool_name, tool_description_id) "
+                  "VALUES (:tool_id, :tool_name, :tool_description_id)");
+    query.bindValue(":tool_id", toolId);
     query.bindValue(":tool_name", tool.getToolName());
-    query.bindValue(":tool_description_id", toolDescriptionId);
+    query.bindValue(":tool_description_id", tool.getToolDescriptionId());
 
     if (!query.exec()) {
         qDebug() << "Error adding tool:" << query.lastError().text();
         return false;
     }
 
+    dbStorage->addTool(Tool::create(toolId,
+                                    tool.getToolName(),
+                                    tool.getToolDescriptionId(),
+                                    tool.getDescription(),
+                                    tool.getLength(),
+                                    tool.getOuterDiameter(),
+                                    tool.getInnerDiameter(),
+                                    tool.getImage(),
+                                    tool.getProduserId(),
+                                    tool.getProduserName()));
+    currentDataStorage = *dbStorage;
     return true;
 }
 
@@ -396,7 +329,6 @@ bool DatabaseManager::updateTool(const Tool &tool)
 {
     QSqlQuery query;
 
-    // Update produser if necessary
     query.prepare(
         "UPDATE produsers SET produser_name = :produser_name WHERE produser_id = :produser_id");
     query.bindValue(":produser_id", tool.getProduserId());
@@ -407,7 +339,6 @@ bool DatabaseManager::updateTool(const Tool &tool)
         return false;
     }
 
-    // Update tool description first
     query.prepare("UPDATE tool_descriptions SET description = :description, length = :length, "
                   "outer_diameter = :outer_diameter, inner_diameter = :inner_diameter, image = "
                   ":image, produser_id = :produser_id "
@@ -425,7 +356,6 @@ bool DatabaseManager::updateTool(const Tool &tool)
         return false;
     }
 
-    // Update tool
     query.prepare(
         "UPDATE tools SET tool_name = :tool_name, tool_description_id = :tool_description_id "
         "WHERE tool_id = :tool_id");
@@ -438,6 +368,8 @@ bool DatabaseManager::updateTool(const Tool &tool)
         return false;
     }
 
+    dbStorage->updateTool(tool);
+    currentDataStorage = *dbStorage;
     return true;
 }
 
@@ -445,7 +377,6 @@ bool DatabaseManager::deleteTool(int toolId)
 {
     QSqlQuery query;
 
-    // Delete tool description first
     query.prepare("DELETE FROM tool_descriptions WHERE tool_description_id = (SELECT "
                   "tool_description_id FROM tools WHERE tool_id = :tool_id)");
     query.bindValue(":tool_id", toolId);
@@ -455,7 +386,6 @@ bool DatabaseManager::deleteTool(int toolId)
         return false;
     }
 
-    // Delete tool
     query.prepare("DELETE FROM tools WHERE tool_id = :tool_id");
     query.bindValue(":tool_id", toolId);
 
@@ -464,15 +394,20 @@ bool DatabaseManager::deleteTool(int toolId)
         return false;
     }
 
+    dbStorage->deleteTool(toolId);
+    currentDataStorage = *dbStorage;
     return true;
 }
 
-// Methods for adding, updating, and deleting Sensors
 bool DatabaseManager::addSensor(const Sensor &sensor)
 {
+    int sensorId = sensor.getSensorId();
+    while (isIdOccupied("sensors", "sensor_id", sensorId)) {
+        sensorId = generateUniqueId("sensors", "sensor_id");
+    }
+
     QSqlQuery query;
 
-    // Add method if not exists
     query.prepare(
         "INSERT OR IGNORE INTO methods (method_id, method_name) VALUES (:method_id, :method_name)");
     query.bindValue(":method_id", sensor.getMethodId());
@@ -483,9 +418,10 @@ bool DatabaseManager::addSensor(const Sensor &sensor)
         return false;
     }
 
-    // Add sensor description first
-    query.prepare("INSERT INTO sensor_descriptions (sensor_description, offset) "
-                  "VALUES (:sensor_description, :offset)");
+    query.prepare(
+        "INSERT INTO sensor_descriptions (sensor_description_id, sensor_description, offset) "
+        "VALUES (:sensor_description_id, :sensor_description, :offset)");
+    query.bindValue(":sensor_description_id", sensor.getSensorDescriptionId());
     query.bindValue(":sensor_description", sensor.getSensorDescription());
     query.bindValue(":offset", sensor.getOffset());
 
@@ -494,21 +430,29 @@ bool DatabaseManager::addSensor(const Sensor &sensor)
         return false;
     }
 
-    int sensorDescriptionId = query.lastInsertId().toInt();
-
-    // Add sensor
-    query.prepare("INSERT INTO sensors (sensor_name, tool_id, method_id, sensor_description_id) "
-                  "VALUES (:sensor_name, :tool_id, :method_id, :sensor_description_id)");
+    query.prepare(
+        "INSERT INTO sensors (sensor_id, sensor_name, tool_id, method_id, sensor_description_id) "
+        "VALUES (:sensor_id, :sensor_name, :tool_id, :method_id, :sensor_description_id)");
+    query.bindValue(":sensor_id", sensorId);
     query.bindValue(":sensor_name", sensor.getSensorName());
     query.bindValue(":tool_id", sensor.getToolId());
     query.bindValue(":method_id", sensor.getMethodId());
-    query.bindValue(":sensor_description_id", sensorDescriptionId);
+    query.bindValue(":sensor_description_id", sensor.getSensorDescriptionId());
 
     if (!query.exec()) {
         qDebug() << "Error adding sensor:" << query.lastError().text();
         return false;
     }
 
+    dbStorage->addSensor(Sensor::create(sensorId,
+                                        sensor.getSensorName(),
+                                        sensor.getToolId(),
+                                        sensor.getMethodId(),
+                                        sensor.getSensorDescriptionId(),
+                                        sensor.getSensorDescription(),
+                                        sensor.getOffset(),
+                                        sensor.getMethodName()));
+    currentDataStorage = *dbStorage;
     return true;
 }
 
@@ -516,17 +460,16 @@ bool DatabaseManager::updateSensor(const Sensor &sensor)
 {
     QSqlQuery query;
 
-    // Update method if necessary
-    query.prepare("UPDATE methods SET method_name = :method_name WHERE method_id = :method_id");
+    query.prepare(
+        "INSERT OR IGNORE INTO methods (method_id, method_name) VALUES (:method_id, :method_name)");
     query.bindValue(":method_id", sensor.getMethodId());
     query.bindValue(":method_name", sensor.getMethodName());
 
     if (!query.exec()) {
-        qDebug() << "Error updating method:" << query.lastError().text();
+        qDebug() << "Error adding method:" << query.lastError().text();
         return false;
     }
 
-    // Update sensor description first
     query.prepare(
         "UPDATE sensor_descriptions SET sensor_description = :sensor_description, offset = :offset "
         "WHERE sensor_description_id = :sensor_description_id");
@@ -539,7 +482,6 @@ bool DatabaseManager::updateSensor(const Sensor &sensor)
         return false;
     }
 
-    // Update sensor
     query.prepare("UPDATE sensors SET sensor_name = :sensor_name, tool_id = :tool_id, method_id = "
                   ":method_id, sensor_description_id = :sensor_description_id "
                   "WHERE sensor_id = :sensor_id");
@@ -554,14 +496,14 @@ bool DatabaseManager::updateSensor(const Sensor &sensor)
         return false;
     }
 
+    dbStorage->updateSensor(sensor);
+    currentDataStorage = *dbStorage;
     return true;
 }
-
 bool DatabaseManager::deleteSensor(int sensorId)
 {
     QSqlQuery query;
 
-    // Delete sensor description first
     query.prepare("DELETE FROM sensor_descriptions WHERE sensor_description_id = (SELECT "
                   "sensor_description_id FROM sensors WHERE sensor_id = :sensor_id)");
     query.bindValue(":sensor_id", sensorId);
@@ -571,7 +513,6 @@ bool DatabaseManager::deleteSensor(int sensorId)
         return false;
     }
 
-    // Delete sensor
     query.prepare("DELETE FROM sensors WHERE sensor_id = :sensor_id");
     query.bindValue(":sensor_id", sensorId);
 
@@ -580,27 +521,34 @@ bool DatabaseManager::deleteSensor(int sensorId)
         return false;
     }
 
+    dbStorage->deleteSensor(sensorId);
+    currentDataStorage = *dbStorage;
     return true;
 }
 
-// Methods for adding, updating, and deleting Main Mnemonics
 bool DatabaseManager::addMainMnemonic(const MainMnemonic &mainMnemonic)
 {
+    int mainMnemonicId = mainMnemonic.getMainMnemonicId();
+    while (isIdOccupied("main_mnemonics", "main_mnemonic_id", mainMnemonicId)) {
+        mainMnemonicId = generateUniqueId("main_mnemonics", "main_mnemonic_id");
+    }
+
     QSqlQuery query;
 
-    // Add type of unit if not exists
+    // Ensure the unit and type exist before adding the main mnemonic
     query.prepare(
         "INSERT OR IGNORE INTO types_of_units (type_id, type_name) VALUES (:type_id, :type_name)");
     query.bindValue(":type_id", mainMnemonic.getTypeId());
     query.bindValue(":type_name", mainMnemonic.getTypeName());
 
     if (!query.exec()) {
-        qDebug() << "Error adding type of unit:" << query.lastError().text();
+        qDebug() << "Error adding type:" << query.lastError().text();
         return false;
     }
 
-    // Add unit
-    query.prepare("INSERT INTO units (unit_name, type_id) VALUES (:unit_name, :type_id)");
+    query.prepare("INSERT OR IGNORE INTO units (unit_id, unit_name, type_id) VALUES (:unit_id, "
+                  ":unit_name, :type_id)");
+    query.bindValue(":unit_id", mainMnemonic.getUnitId());
     query.bindValue(":unit_name", mainMnemonic.getUnitName());
     query.bindValue(":type_id", mainMnemonic.getTypeId());
 
@@ -609,22 +557,31 @@ bool DatabaseManager::addMainMnemonic(const MainMnemonic &mainMnemonic)
         return false;
     }
 
-    int unitId = query.lastInsertId().toInt();
-
-    // Add main mnemonic
-    query.prepare("INSERT INTO main_mnemonics (main_mnemonic_name, main_mnemonic_description, "
-                  "sensor_id, unit_id) "
-                  "VALUES (:main_mnemonic_name, :main_mnemonic_description, :sensor_id, :unit_id)");
+    // Add the main mnemonic
+    query.prepare("INSERT INTO main_mnemonics (main_mnemonic_id, main_mnemonic_name, "
+                  "main_mnemonic_description, sensor_id, unit_id) "
+                  "VALUES (:main_mnemonic_id, :main_mnemonic_name, :main_mnemonic_description, "
+                  ":sensor_id, :unit_id)");
+    query.bindValue(":main_mnemonic_id", mainMnemonicId);
     query.bindValue(":main_mnemonic_name", mainMnemonic.getMainMnemonicName());
     query.bindValue(":main_mnemonic_description", mainMnemonic.getMainMnemonicDescription());
     query.bindValue(":sensor_id", mainMnemonic.getSensorId());
-    query.bindValue(":unit_id", unitId);
+    query.bindValue(":unit_id", mainMnemonic.getUnitId());
 
     if (!query.exec()) {
         qDebug() << "Error adding main mnemonic:" << query.lastError().text();
         return false;
     }
 
+    dbStorage->addMainMnemonic(MainMnemonic::create(mainMnemonicId,
+                                                    mainMnemonic.getMainMnemonicName(),
+                                                    mainMnemonic.getMainMnemonicDescription(),
+                                                    mainMnemonic.getSensorId(),
+                                                    mainMnemonic.getUnitId(),
+                                                    mainMnemonic.getTypeId(),
+                                                    mainMnemonic.getTypeName(),
+                                                    mainMnemonic.getUnitName()));
+    currentDataStorage = *dbStorage;
     return true;
 }
 
@@ -632,29 +589,29 @@ bool DatabaseManager::updateMainMnemonic(const MainMnemonic &mainMnemonic)
 {
     QSqlQuery query;
 
-    // Update type of unit if necessary
-    query.prepare("UPDATE types_of_units SET type_name = :type_name WHERE type_id = :type_id");
+    // Ensure the unit and type exist before updating the main mnemonic
+    query.prepare(
+        "INSERT OR IGNORE INTO types_of_units (type_id, type_name) VALUES (:type_id, :type_name)");
     query.bindValue(":type_id", mainMnemonic.getTypeId());
     query.bindValue(":type_name", mainMnemonic.getTypeName());
 
     if (!query.exec()) {
-        qDebug() << "Error updating type of unit:" << query.lastError().text();
+        qDebug() << "Error adding type:" << query.lastError().text();
         return false;
     }
 
-    // Update unit
-    query.prepare(
-        "UPDATE units SET unit_name = :unit_name, type_id = :type_id WHERE unit_id = :unit_id");
+    query.prepare("INSERT OR IGNORE INTO units (unit_id, unit_name, type_id) VALUES (:unit_id, "
+                  ":unit_name, :type_id)");
     query.bindValue(":unit_id", mainMnemonic.getUnitId());
     query.bindValue(":unit_name", mainMnemonic.getUnitName());
     query.bindValue(":type_id", mainMnemonic.getTypeId());
 
     if (!query.exec()) {
-        qDebug() << "Error updating unit:" << query.lastError().text();
+        qDebug() << "Error adding unit:" << query.lastError().text();
         return false;
     }
 
-    // Update main mnemonic
+    // Update the main mnemonic
     query.prepare("UPDATE main_mnemonics SET main_mnemonic_name = :main_mnemonic_name, "
                   "main_mnemonic_description = :main_mnemonic_description, sensor_id = :sensor_id, "
                   "unit_id = :unit_id "
@@ -670,6 +627,8 @@ bool DatabaseManager::updateMainMnemonic(const MainMnemonic &mainMnemonic)
         return false;
     }
 
+    dbStorage->updateMainMnemonic(mainMnemonic);
+    currentDataStorage = *dbStorage;
     return true;
 }
 
@@ -677,17 +636,6 @@ bool DatabaseManager::deleteMainMnemonic(int mainMnemonicId)
 {
     QSqlQuery query;
 
-    // Delete unit first
-    query.prepare("DELETE FROM units WHERE unit_id = (SELECT unit_id FROM main_mnemonics WHERE "
-                  "main_mnemonic_id = :main_mnemonic_id)");
-    query.bindValue(":main_mnemonic_id", mainMnemonicId);
-
-    if (!query.exec()) {
-        qDebug() << "Error deleting unit:" << query.lastError().text();
-        return false;
-    }
-
-    // Delete main mnemonic
     query.prepare("DELETE FROM main_mnemonics WHERE main_mnemonic_id = :main_mnemonic_id");
     query.bindValue(":main_mnemonic_id", mainMnemonicId);
 
@@ -696,15 +644,43 @@ bool DatabaseManager::deleteMainMnemonic(int mainMnemonicId)
         return false;
     }
 
+    dbStorage->deleteMainMnemonic(mainMnemonicId);
+    currentDataStorage = *dbStorage;
     return true;
 }
 
-// Methods for adding, updating, and deleting Additional Mnemonics
 bool DatabaseManager::addAdditionalMnemonic(const AdditionalMnemonic &additionalMnemonic)
 {
+    int additionalMnemonicId = additionalMnemonic.getAdditionalMnemonicId();
+    while (isIdOccupied("additional_mnemonics", "additional_mnemonic_id", additionalMnemonicId)) {
+        additionalMnemonicId = generateUniqueId("additional_mnemonics", "additional_mnemonic_id");
+    }
+
     QSqlQuery query;
 
-    // Add company if not exists
+    // Ensure the unit and type exist before adding the additional mnemonic
+    query.prepare(
+        "INSERT OR IGNORE INTO types_of_units (type_id, type_name) VALUES (:type_id, :type_name)");
+    query.bindValue(":type_id", additionalMnemonic.getTypeId());
+    query.bindValue(":type_name", additionalMnemonic.getTypeName());
+
+    if (!query.exec()) {
+        qDebug() << "Error adding type:" << query.lastError().text();
+        return false;
+    }
+
+    query.prepare("INSERT OR IGNORE INTO units (unit_id, unit_name, type_id) VALUES (:unit_id, "
+                  ":unit_name, :type_id)");
+    query.bindValue(":unit_id", additionalMnemonic.getUnitId());
+    query.bindValue(":unit_name", additionalMnemonic.getUnitName());
+    query.bindValue(":type_id", additionalMnemonic.getTypeId());
+
+    if (!query.exec()) {
+        qDebug() << "Error adding unit:" << query.lastError().text();
+        return false;
+    }
+
+    // Ensure the company exists before adding the additional mnemonic
     query.prepare("INSERT OR IGNORE INTO companies (company_id, company_name) VALUES (:company_id, "
                   ":company_name)");
     query.bindValue(":company_id", additionalMnemonic.getCompanyId());
@@ -715,8 +691,54 @@ bool DatabaseManager::addAdditionalMnemonic(const AdditionalMnemonic &additional
         return false;
     }
 
-    // Add unit
-    query.prepare("INSERT INTO units (unit_name, type_id) VALUES (:unit_name, :type_id)");
+    // Add the additional mnemonic
+    query.prepare("INSERT INTO additional_mnemonics (additional_mnemonic_id, "
+                  "additional_mnemonic_name, company_id, main_mnemonic_id, unit_id) "
+                  "VALUES (:additional_mnemonic_id, :additional_mnemonic_name, :company_id, "
+                  ":main_mnemonic_id, :unit_id)");
+    query.bindValue(":additional_mnemonic_id", additionalMnemonicId);
+    query.bindValue(":additional_mnemonic_name", additionalMnemonic.getAdditionalMnemonicName());
+    query.bindValue(":company_id", additionalMnemonic.getCompanyId());
+    query.bindValue(":main_mnemonic_id", additionalMnemonic.getMainMnemonicId());
+    query.bindValue(":unit_id", additionalMnemonic.getUnitId());
+
+    if (!query.exec()) {
+        qDebug() << "Error adding additional mnemonic:" << query.lastError().text();
+        return false;
+    }
+
+    dbStorage->addAdditionalMnemonic(
+        AdditionalMnemonic::create(additionalMnemonicId,
+                                   additionalMnemonic.getAdditionalMnemonicName(),
+                                   additionalMnemonic.getCompanyId(),
+                                   additionalMnemonic.getMainMnemonicId(),
+                                   additionalMnemonic.getUnitId(),
+                                   additionalMnemonic.getCompanyName(),
+                                   additionalMnemonic.getUnitName(),
+                                   additionalMnemonic.getTypeId(),
+                                   additionalMnemonic.getTypeName()));
+    currentDataStorage = *dbStorage;
+    return true;
+}
+
+bool DatabaseManager::updateAdditionalMnemonic(const AdditionalMnemonic &additionalMnemonic)
+{
+    QSqlQuery query;
+
+    // Ensure the unit and type exist before updating the additional mnemonic
+    query.prepare(
+        "INSERT OR IGNORE INTO types_of_units (type_id, type_name) VALUES (:type_id, :type_name)");
+    query.bindValue(":type_id", additionalMnemonic.getTypeId());
+    query.bindValue(":type_name", additionalMnemonic.getTypeName());
+
+    if (!query.exec()) {
+        qDebug() << "Error adding type:" << query.lastError().text();
+        return false;
+    }
+
+    query.prepare("INSERT OR IGNORE INTO units (unit_id, unit_name, type_id) VALUES (:unit_id, "
+                  ":unit_name, :type_id)");
+    query.bindValue(":unit_id", additionalMnemonic.getUnitId());
     query.bindValue(":unit_name", additionalMnemonic.getUnitName());
     query.bindValue(":type_id", additionalMnemonic.getTypeId());
 
@@ -725,68 +747,35 @@ bool DatabaseManager::addAdditionalMnemonic(const AdditionalMnemonic &additional
         return false;
     }
 
-    int unitId = query.lastInsertId().toInt();
-
-    // Add additional mnemonic
-    query.prepare("INSERT INTO additional_mnemonics (additional_mnemonic_name, main_mnemonic_id, "
-                  "unit_id, company_id) "
-                  "VALUES (:additional_mnemonic_name, :main_mnemonic_id, :unit_id, :company_id)");
-    query.bindValue(":additional_mnemonic_name", additionalMnemonic.getAdditionalMnemonicName());
-    query.bindValue(":main_mnemonic_id", additionalMnemonic.getMainMnemonicId());
-    query.bindValue(":unit_id", unitId);
-    query.bindValue(":company_id", additionalMnemonic.getCompanyId());
-
-    if (!query.exec()) {
-        qDebug() << "Error adding additional mnemonic:" << query.lastError().text();
-        return false;
-    }
-
-    return true;
-}
-
-bool DatabaseManager::updateAdditionalMnemonic(const AdditionalMnemonic &additionalMnemonic)
-{
-    QSqlQuery query;
-
-    // Update company if necessary
-    query.prepare(
-        "UPDATE companies SET company_name = :company_name WHERE company_id = :company_id");
+    // Ensure the company exists before updating the additional mnemonic
+    query.prepare("INSERT OR IGNORE INTO companies (company_id, company_name) VALUES (:company_id, "
+                  ":company_name)");
     query.bindValue(":company_id", additionalMnemonic.getCompanyId());
     query.bindValue(":company_name", additionalMnemonic.getCompanyName());
 
     if (!query.exec()) {
-        qDebug() << "Error updating company:" << query.lastError().text();
+        qDebug() << "Error adding company:" << query.lastError().text();
         return false;
     }
 
-    // Update unit
-    query.prepare(
-        "UPDATE units SET unit_name = :unit_name, type_id = :type_id WHERE unit_id = :unit_id");
-    query.bindValue(":unit_id", additionalMnemonic.getUnitId());
-    query.bindValue(":unit_name", additionalMnemonic.getUnitName());
-    query.bindValue(":type_id", additionalMnemonic.getTypeId());
-
-    if (!query.exec()) {
-        qDebug() << "Error updating unit:" << query.lastError().text();
-        return false;
-    }
-
-    // Update additional mnemonic
+    // Update the additional mnemonic
     query.prepare(
         "UPDATE additional_mnemonics SET additional_mnemonic_name = :additional_mnemonic_name, "
-        "main_mnemonic_id = :main_mnemonic_id, unit_id = :unit_id, company_id = :company_id "
+        "company_id = :company_id, main_mnemonic_id = :main_mnemonic_id, unit_id = :unit_id "
         "WHERE additional_mnemonic_id = :additional_mnemonic_id");
     query.bindValue(":additional_mnemonic_id", additionalMnemonic.getAdditionalMnemonicId());
     query.bindValue(":additional_mnemonic_name", additionalMnemonic.getAdditionalMnemonicName());
+    query.bindValue(":company_id", additionalMnemonic.getCompanyId());
     query.bindValue(":main_mnemonic_id", additionalMnemonic.getMainMnemonicId());
     query.bindValue(":unit_id", additionalMnemonic.getUnitId());
-    query.bindValue(":company_id", additionalMnemonic.getCompanyId());
 
     if (!query.exec()) {
         qDebug() << "Error updating additional mnemonic:" << query.lastError().text();
         return false;
     }
 
+    dbStorage->updateAdditionalMnemonic(additionalMnemonic);
+    currentDataStorage = *dbStorage;
     return true;
 }
 
@@ -794,17 +783,6 @@ bool DatabaseManager::deleteAdditionalMnemonic(int additionalMnemonicId)
 {
     QSqlQuery query;
 
-    // Delete unit first
-    query.prepare("DELETE FROM units WHERE unit_id = (SELECT unit_id FROM additional_mnemonics "
-                  "WHERE additional_mnemonic_id = :additional_mnemonic_id)");
-    query.bindValue(":additional_mnemonic_id", additionalMnemonicId);
-
-    if (!query.exec()) {
-        qDebug() << "Error deleting unit:" << query.lastError().text();
-        return false;
-    }
-
-    // Delete additional mnemonic
     query.prepare(
         "DELETE FROM additional_mnemonics WHERE additional_mnemonic_id = :additional_mnemonic_id");
     query.bindValue(":additional_mnemonic_id", additionalMnemonicId);
@@ -814,19 +792,26 @@ bool DatabaseManager::deleteAdditionalMnemonic(int additionalMnemonicId)
         return false;
     }
 
+    dbStorage->deleteAdditionalMnemonic(additionalMnemonicId);
+    currentDataStorage = *dbStorage;
     return true;
 }
 
-// Methods for adding, updating, and deleting Conversion Formulas
 bool DatabaseManager::addConversionFormula(const ConversionFormula &conversionFormula)
 {
+    int formulaId = conversionFormula.getFormulaId();
+    while (isIdOccupied("conversion_formulas", "formula_id", formulaId)) {
+        formulaId = generateUniqueId("conversion_formulas", "formula_id");
+    }
+
     QSqlQuery query;
 
-    // Add conversion formula
-    query.prepare("INSERT INTO conversion_formulas (formula, inital_unit_id, derived_unit_id) "
-                  "VALUES (:formula, :inital_unit_id, :derived_unit_id)");
+    query.prepare(
+        "INSERT INTO conversion_formulas (formula_id, formula, inital_unit_id, derived_unit_id) "
+        "VALUES (:formula_id, :formula, :inital_unit_id, :derived_unit_id)");
+    query.bindValue(":formula_id", formulaId);
     query.bindValue(":formula", conversionFormula.getFormula());
-    query.bindValue(":inital_unit_id", conversionFormula.getInitalUnitId());
+    query.bindValue(":inital_unit_id", conversionFormula.getInitialUnitId());
     query.bindValue(":derived_unit_id", conversionFormula.getDerivedUnitId());
 
     if (!query.exec()) {
@@ -834,6 +819,11 @@ bool DatabaseManager::addConversionFormula(const ConversionFormula &conversionFo
         return false;
     }
 
+    dbStorage->addConversionFormula(ConversionFormula::create(formulaId,
+                                                              conversionFormula.getFormula(),
+                                                              conversionFormula.getInitialUnitId(),
+                                                              conversionFormula.getDerivedUnitId()));
+    currentDataStorage = *dbStorage;
     return true;
 }
 
@@ -841,13 +831,12 @@ bool DatabaseManager::updateConversionFormula(const ConversionFormula &conversio
 {
     QSqlQuery query;
 
-    // Update conversion formula
     query.prepare("UPDATE conversion_formulas SET formula = :formula, inital_unit_id = "
                   ":inital_unit_id, derived_unit_id = :derived_unit_id "
                   "WHERE formula_id = :formula_id");
     query.bindValue(":formula_id", conversionFormula.getFormulaId());
     query.bindValue(":formula", conversionFormula.getFormula());
-    query.bindValue(":inital_unit_id", conversionFormula.getInitalUnitId());
+    query.bindValue(":inital_unit_id", conversionFormula.getInitialUnitId());
     query.bindValue(":derived_unit_id", conversionFormula.getDerivedUnitId());
 
     if (!query.exec()) {
@@ -855,6 +844,8 @@ bool DatabaseManager::updateConversionFormula(const ConversionFormula &conversio
         return false;
     }
 
+    dbStorage->updateConversionFormula(conversionFormula);
+    currentDataStorage = *dbStorage;
     return true;
 }
 
@@ -862,7 +853,6 @@ bool DatabaseManager::deleteConversionFormula(int formulaId)
 {
     QSqlQuery query;
 
-    // Delete conversion formula
     query.prepare("DELETE FROM conversion_formulas WHERE formula_id = :formula_id");
     query.bindValue(":formula_id", formulaId);
 
@@ -871,5 +861,29 @@ bool DatabaseManager::deleteConversionFormula(int formulaId)
         return false;
     }
 
+    dbStorage->deleteConversionFormula(formulaId);
+    currentDataStorage = *dbStorage;
     return true;
+}
+void DatabaseManager::compareData()
+{
+    const auto &originalTools = originalDataStorage.getToolList();
+    const auto &currentTools = currentDataStorage.getToolList();
+
+    for (int i = 0; i < originalTools.size(); ++i) {
+        if (!(originalTools[i] == currentTools[i])) {
+            qDebug() << "Difference found in Tools at index" << i;
+        }
+    }
+
+    const auto &originalSensors = originalDataStorage.getSensorList();
+    const auto &currentSensors = currentDataStorage.getSensorList();
+
+    for (int i = 0; i < originalSensors.size(); ++i) {
+        if (!(originalSensors[i] == currentSensors[i])) {
+            qDebug() << "Difference found in Sensors at index" << i;
+        }
+    }
+
+    // Implement similar comparison for MainMnemonic, AdditionalMnemonic, and ConversionFormula
 }

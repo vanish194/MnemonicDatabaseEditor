@@ -11,38 +11,46 @@
 class DatabaseStorage
 {
 public:
-    DatabaseStorage();
+    void clearAll();
 
-    // Methods for Tool
-    void addTool(Tool *tool);
-    bool removeTool(int toolId);
     Tool *findToolById(int toolId);
-
-    // Methods for Sensor
-    void addSensor(Sensor *sensor);
-    bool removeSensor(int sensorId);
     Sensor *findSensorById(int sensorId);
-
-    // Methods for MainMnemonic
-    void addMainMnemonic(MainMnemonic *mainMnemonic);
-    bool removeMainMnemonic(int mainMnemonicId);
     MainMnemonic *findMainMnemonicById(int mainMnemonicId);
-
-    // Methods for AdditionalMnemonic
-    void addAdditionalMnemonic(AdditionalMnemonic *additionalMnemonic);
-    bool removeAdditionalMnemonic(int additionalMnemonicId);
     AdditionalMnemonic *findAdditionalMnemonicById(int additionalMnemonicId);
-
-    // Methods for ConversionFormula
-    void addConversionFormula(ConversionFormula *conversionFormula);
-    bool removeConversionFormula(int formulaId);
     ConversionFormula *findConversionFormulaById(int formulaId);
 
-    QList<Tool *> toolList;
-    QList<Sensor *> sensorList;
-    QList<MainMnemonic *> mainMnemonicList;
-    QList<AdditionalMnemonic *> additionalMnemonicList;
-    QList<ConversionFormula *> conversionFormulaList;
+    bool addTool(const Tool &tool);
+    bool updateTool(const Tool &tool);
+    bool deleteTool(int toolId);
+
+    bool addSensor(const Sensor &sensor);
+    bool updateSensor(const Sensor &sensor);
+    bool deleteSensor(int sensorId);
+
+    bool addMainMnemonic(const MainMnemonic &mainMnemonic);
+    bool updateMainMnemonic(const MainMnemonic &mainMnemonic);
+    bool deleteMainMnemonic(int mainMnemonicId);
+
+    bool addAdditionalMnemonic(const AdditionalMnemonic &additionalMnemonic);
+    bool updateAdditionalMnemonic(const AdditionalMnemonic &additionalMnemonic);
+    bool deleteAdditionalMnemonic(int additionalMnemonicId);
+
+    bool addConversionFormula(const ConversionFormula &conversionFormula);
+    bool updateConversionFormula(const ConversionFormula &conversionFormula);
+    bool deleteConversionFormula(int formulaId);
+
+    const QList<Tool> &getToolList() const;
+    const QList<Sensor> &getSensorList() const;
+    const QList<MainMnemonic> &getMainMnemonicList() const;
+    const QList<AdditionalMnemonic> &getAdditionalMnemonicList() const;
+    const QList<ConversionFormula> &getConversionFormulaList() const;
+
+private:
+    QList<Tool> toolList;
+    QList<Sensor> sensorList;
+    QList<MainMnemonic> mainMnemonicList;
+    QList<AdditionalMnemonic> additionalMnemonicList;
+    QList<ConversionFormula> conversionFormulaList;
 };
 
 #endif // DATABASESTORAGE_H

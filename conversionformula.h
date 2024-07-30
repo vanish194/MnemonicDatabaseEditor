@@ -6,46 +6,32 @@
 class ConversionFormula
 {
 public:
-    static ConversionFormula *create(int formulaId,
-                                     int initalUnitId,
-                                     int derivedUnitId,
-                                     const QString &formula,
-                                     const QString &initalUnitName,
-                                     const QString &derivedUnitName);
+    static ConversionFormula create(int id,
+                                    const QString &formula,
+                                    int initialUnitId,
+                                    int derivedUnitId)
+    {
+        return ConversionFormula(id, formula, initialUnitId, derivedUnitId);
+    }
 
-    ConversionFormula(int formulaId,
-                      int initalUnitId,
-                      int derivedUnitId,
-                      const QString &formula,
-                      const QString &initalUnitName,
-                      const QString &derivedUnitName);
-
-    // Getters
     int getFormulaId() const;
-    int getInitalUnitId() const;
-    int getDerivedUnitId() const;
     QString getFormula() const;
-    QString getInitalUnitName() const;
-    QString getDerivedUnitName() const;
+    int getInitialUnitId() const;
+    int getDerivedUnitId() const;
 
-    // Setters
-    void setFormulaId(int newFormulaId);
-    void setInitalUnitId(int newInitalUnitId);
-    void setDerivedUnitId(int newDerivedUnitId);
-    void setFormula(const QString &newFormula);
-    void setInitalUnitName(const QString &newInitalUnitName);
-    void setDerivedUnitName(const QString &newDerivedUnitName);
+    void setFormulaId(int id);
+    void setFormula(const QString &formula);
+    void setInitialUnitId(int id);
+    void setDerivedUnitId(int id);
 
-    // Comparison operator
     bool operator==(const ConversionFormula &other) const;
 
 private:
+    ConversionFormula(int id, const QString &formula, int initialUnitId, int derivedUnitId);
     int formulaId;
-    int initalUnitId;
-    int derivedUnitId;
     QString formula;
-    QString initalUnitName;
-    QString derivedUnitName;
+    int initialUnitId;
+    int derivedUnitId;
 };
 
 #endif // CONVERSIONFORMULA_H

@@ -1,46 +1,39 @@
 #include "customtreeview.h"
-#include <QDebug>
-#include <QMessageBox>
 
 CustomTreeView::CustomTreeView(QWidget *parent)
     : QTreeView(parent)
 {
     contextMenu = new QMenu(this);
 
-    actionEdit = new QAction(tr("Edit"), this);
-    actionDelete = new QAction(tr("Delete"), this);
+    addAction = new QAction("Add", this);
+    editAction = new QAction("Edit", this);
+    deleteAction = new QAction("Delete", this);
 
-    contextMenu->addAction(actionEdit);
-    contextMenu->addAction(actionDelete);
+    contextMenu->addAction(addAction);
+    contextMenu->addAction(editAction);
+    contextMenu->addAction(deleteAction);
 
-    connect(actionEdit, &QAction::triggered, this, &CustomTreeView::onEdit);
-    connect(actionDelete, &QAction::triggered, this, &CustomTreeView::onDelete);
+    connect(addAction, &QAction::triggered, this, &CustomTreeView::onAdd);
+    connect(editAction, &QAction::triggered, this, &CustomTreeView::onEdit);
+    connect(deleteAction, &QAction::triggered, this, &CustomTreeView::onDelete);
 }
 
 void CustomTreeView::contextMenuEvent(QContextMenuEvent *event)
 {
-    QModelIndex index = indexAt(event->pos());
-    if (index.isValid()) {
-        emit contextMenuRequested(event->pos(), index);
-        contextMenu->exec(event->globalPos());
-    }
+    contextMenu->exec(event->globalPos());
+}
+
+void CustomTreeView::onAdd()
+{
+    // Handle add action
 }
 
 void CustomTreeView::onEdit()
 {
-    QModelIndex index = currentIndex();
-    if (index.isValid()) {
-        QString itemText = model()->data(index).toString();
-        QMessageBox::information(this, tr("Edit"), tr("Edit item: %1").arg(itemText));
-    }
+    // Handle edit action
 }
 
 void CustomTreeView::onDelete()
 {
-    QModelIndex index = currentIndex();
-    if (index.isValid()) {
-        QString itemText = model()->data(index).toString();
-        QMessageBox::information(this, tr("Delete"), tr("Delete item: %1").arg(itemText));
-        model()->removeRow(index.row(), index.parent());
-    }
+    // Handle delete action
 }

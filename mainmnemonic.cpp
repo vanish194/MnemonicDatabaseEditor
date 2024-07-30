@@ -1,54 +1,38 @@
 #include "mainmnemonic.h"
 
-MainMnemonic *MainMnemonic::create(int sensorId,
-                                   int mainMnemonicId,
-                                   int unitId,
-                                   int typeId,
-                                   const QString &typeName,
-                                   const QString &unitName,
-                                   const QString &mainMnemonicName,
-                                   const QString &mainMnemonicDescription,
-                                   const QString &sensorName)
-{
-    return new MainMnemonic(sensorId,
-                            mainMnemonicId,
-                            unitId,
-                            typeId,
-                            typeName,
-                            unitName,
-                            mainMnemonicName,
-                            mainMnemonicDescription,
-                            sensorName);
-}
-
-MainMnemonic::MainMnemonic(int sensorId,
-                           int mainMnemonicId,
+MainMnemonic::MainMnemonic(int id,
+                           const QString &name,
+                           const QString &desc,
+                           int sensorId,
                            int unitId,
                            int typeId,
                            const QString &typeName,
-                           const QString &unitName,
-                           const QString &mainMnemonicName,
-                           const QString &mainMnemonicDescription,
-                           const QString &sensorName)
-    : sensorId(sensorId)
-    , mainMnemonicId(mainMnemonicId)
+                           const QString &unitName)
+    : mainMnemonicId(id)
+    , mainMnemonicName(name)
+    , mainMnemonicDescription(desc)
+    , sensorId(sensorId)
     , unitId(unitId)
     , typeId(typeId)
     , typeName(typeName)
     , unitName(unitName)
-    , mainMnemonicName(mainMnemonicName)
-    , mainMnemonicDescription(mainMnemonicDescription)
-    , sensorName(sensorName)
 {}
 
-// Getters
-int MainMnemonic::getSensorId() const
-{
-    return sensorId;
-}
 int MainMnemonic::getMainMnemonicId() const
 {
     return mainMnemonicId;
+}
+QString MainMnemonic::getMainMnemonicName() const
+{
+    return mainMnemonicName;
+}
+QString MainMnemonic::getMainMnemonicDescription() const
+{
+    return mainMnemonicDescription;
+}
+int MainMnemonic::getSensorId() const
+{
+    return sensorId;
 }
 int MainMnemonic::getUnitId() const
 {
@@ -66,63 +50,44 @@ QString MainMnemonic::getUnitName() const
 {
     return unitName;
 }
-QString MainMnemonic::getMainMnemonicName() const
+
+void MainMnemonic::setMainMnemonicId(int id)
 {
-    return mainMnemonicName;
+    mainMnemonicId = id;
 }
-QString MainMnemonic::getMainMnemonicDescription() const
+void MainMnemonic::setMainMnemonicName(const QString &name)
 {
-    return mainMnemonicDescription;
+    mainMnemonicName = name;
 }
-QString MainMnemonic::getSensorName() const
+void MainMnemonic::setMainMnemonicDescription(const QString &desc)
 {
-    return sensorName;
+    mainMnemonicDescription = desc;
+}
+void MainMnemonic::setSensorId(int id)
+{
+    sensorId = id;
+}
+void MainMnemonic::setUnitId(int id)
+{
+    unitId = id;
+}
+void MainMnemonic::setTypeId(int id)
+{
+    typeId = id;
+}
+void MainMnemonic::setTypeName(const QString &name)
+{
+    typeName = name;
+}
+void MainMnemonic::setUnitName(const QString &name)
+{
+    unitName = name;
 }
 
-// Setters
-void MainMnemonic::setSensorId(int newSensorId)
-{
-    sensorId = newSensorId;
-}
-void MainMnemonic::setMainMnemonicId(int newMainMnemonicId)
-{
-    mainMnemonicId = newMainMnemonicId;
-}
-void MainMnemonic::setUnitId(int newUnitId)
-{
-    unitId = newUnitId;
-}
-void MainMnemonic::setTypeId(int newTypeId)
-{
-    typeId = newTypeId;
-}
-void MainMnemonic::setTypeName(const QString &newTypeName)
-{
-    typeName = newTypeName;
-}
-void MainMnemonic::setUnitName(const QString &newUnitName)
-{
-    unitName = newUnitName;
-}
-void MainMnemonic::setMainMnemonicName(const QString &newMainMnemonicName)
-{
-    mainMnemonicName = newMainMnemonicName;
-}
-void MainMnemonic::setMainMnemonicDescription(const QString &newMainMnemonicDescription)
-{
-    mainMnemonicDescription = newMainMnemonicDescription;
-}
-void MainMnemonic::setSensorName(const QString &newSensorName)
-{
-    sensorName = newSensorName;
-}
-
-// Comparison operator
 bool MainMnemonic::operator==(const MainMnemonic &other) const
 {
-    return sensorId == other.sensorId && mainMnemonicId == other.mainMnemonicId
+    return mainMnemonicId == other.mainMnemonicId && mainMnemonicName == other.mainMnemonicName
+           && mainMnemonicDescription == other.mainMnemonicDescription && sensorId == other.sensorId
            && unitId == other.unitId && typeId == other.typeId && typeName == other.typeName
-           && unitName == other.unitName && mainMnemonicName == other.mainMnemonicName
-           && mainMnemonicDescription == other.mainMnemonicDescription
-           && sensorName == other.sensorName;
+           && unitName == other.unitName;
 }

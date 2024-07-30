@@ -1,66 +1,52 @@
 #include "additionalmnemonic.h"
 
-AdditionalMnemonic *AdditionalMnemonic::create(int additionalMnemonicId,
-                                               int mainMnemonicId,
-                                               int companyId,
-                                               int unitId,
-                                               int typeId,
-                                               const QString &typeName,
-                                               const QString &unitName,
-                                               const QString &additionalMnemonicName,
-                                               const QString &mainMnemonicName,
-                                               const QString &companyName)
-{
-    return new AdditionalMnemonic(additionalMnemonicId,
-                                  mainMnemonicId,
-                                  companyId,
-                                  unitId,
-                                  typeId,
-                                  typeName,
-                                  unitName,
-                                  additionalMnemonicName,
-                                  mainMnemonicName,
-                                  companyName);
-}
-
-AdditionalMnemonic::AdditionalMnemonic(int additionalMnemonicId,
-                                       int mainMnemonicId,
+AdditionalMnemonic::AdditionalMnemonic(int id,
+                                       const QString &name,
                                        int companyId,
+                                       int mainMnemonicId,
                                        int unitId,
-                                       int typeId,
-                                       const QString &typeName,
+                                       const QString &companyName,
                                        const QString &unitName,
-                                       const QString &additionalMnemonicName,
-                                       const QString &mainMnemonicName,
-                                       const QString &companyName)
-    : additionalMnemonicId(additionalMnemonicId)
-    , mainMnemonicId(mainMnemonicId)
+                                       int typeId,
+                                       const QString &typeName)
+    : additionalMnemonicId(id)
+    , additionalMnemonicName(name)
     , companyId(companyId)
+    , mainMnemonicId(mainMnemonicId)
     , unitId(unitId)
+    , companyName(companyName)
+    , unitName(unitName)
     , typeId(typeId)
     , typeName(typeName)
-    , unitName(unitName)
-    , additionalMnemonicName(additionalMnemonicName)
-    , mainMnemonicName(mainMnemonicName)
-    , companyName(companyName)
 {}
 
-// Getters
 int AdditionalMnemonic::getAdditionalMnemonicId() const
 {
     return additionalMnemonicId;
 }
-int AdditionalMnemonic::getMainMnemonicId() const
+QString AdditionalMnemonic::getAdditionalMnemonicName() const
 {
-    return mainMnemonicId;
+    return additionalMnemonicName;
 }
 int AdditionalMnemonic::getCompanyId() const
 {
     return companyId;
 }
+int AdditionalMnemonic::getMainMnemonicId() const
+{
+    return mainMnemonicId;
+}
 int AdditionalMnemonic::getUnitId() const
 {
     return unitId;
+}
+QString AdditionalMnemonic::getCompanyName() const
+{
+    return companyName;
+}
+QString AdditionalMnemonic::getUnitName() const
+{
+    return unitName;
 }
 int AdditionalMnemonic::getTypeId() const
 {
@@ -70,71 +56,49 @@ QString AdditionalMnemonic::getTypeName() const
 {
     return typeName;
 }
-QString AdditionalMnemonic::getUnitName() const
+
+void AdditionalMnemonic::setAdditionalMnemonicId(int id)
 {
-    return unitName;
+    additionalMnemonicId = id;
 }
-QString AdditionalMnemonic::getAdditionalMnemonicName() const
+void AdditionalMnemonic::setAdditionalMnemonicName(const QString &name)
 {
-    return additionalMnemonicName;
+    additionalMnemonicName = name;
 }
-QString AdditionalMnemonic::getMainMnemonicName() const
+void AdditionalMnemonic::setCompanyId(int id)
 {
-    return mainMnemonicName;
+    companyId = id;
 }
-QString AdditionalMnemonic::getCompanyName() const
+void AdditionalMnemonic::setMainMnemonicId(int id)
 {
-    return companyName;
+    mainMnemonicId = id;
+}
+void AdditionalMnemonic::setUnitId(int id)
+{
+    unitId = id;
+}
+void AdditionalMnemonic::setCompanyName(const QString &name)
+{
+    companyName = name;
+}
+void AdditionalMnemonic::setUnitName(const QString &name)
+{
+    unitName = name;
+}
+void AdditionalMnemonic::setTypeId(int id)
+{
+    typeId = id;
+}
+void AdditionalMnemonic::setTypeName(const QString &name)
+{
+    typeName = name;
 }
 
-// Setters
-void AdditionalMnemonic::setAdditionalMnemonicId(int newAdditionalMnemonicId)
-{
-    additionalMnemonicId = newAdditionalMnemonicId;
-}
-void AdditionalMnemonic::setMainMnemonicId(int newMainMnemonicId)
-{
-    mainMnemonicId = newMainMnemonicId;
-}
-void AdditionalMnemonic::setCompanyId(int newCompanyId)
-{
-    companyId = newCompanyId;
-}
-void AdditionalMnemonic::setUnitId(int newUnitId)
-{
-    unitId = newUnitId;
-}
-void AdditionalMnemonic::setTypeId(int newTypeId)
-{
-    typeId = newTypeId;
-}
-void AdditionalMnemonic::setTypeName(const QString &newTypeName)
-{
-    typeName = newTypeName;
-}
-void AdditionalMnemonic::setUnitName(const QString &newUnitName)
-{
-    unitName = newUnitName;
-}
-void AdditionalMnemonic::setAdditionalMnemonicName(const QString &newAdditionalMnemonicName)
-{
-    additionalMnemonicName = newAdditionalMnemonicName;
-}
-void AdditionalMnemonic::setMainMnemonicName(const QString &newMainMnemonicName)
-{
-    mainMnemonicName = newMainMnemonicName;
-}
-void AdditionalMnemonic::setCompanyName(const QString &newCompanyName)
-{
-    companyName = newCompanyName;
-}
-
-// Comparison operator
 bool AdditionalMnemonic::operator==(const AdditionalMnemonic &other) const
 {
     return additionalMnemonicId == other.additionalMnemonicId
-           && mainMnemonicId == other.mainMnemonicId && companyId == other.companyId
-           && unitId == other.unitId && typeId == other.typeId && typeName == other.typeName
-           && unitName == other.unitName && additionalMnemonicName == other.additionalMnemonicName
-           && mainMnemonicName == other.mainMnemonicName && companyName == other.companyName;
+           && additionalMnemonicName == other.additionalMnemonicName && companyId == other.companyId
+           && mainMnemonicId == other.mainMnemonicId && unitId == other.unitId
+           && companyName == other.companyName && unitName == other.unitName
+           && typeId == other.typeId && typeName == other.typeName;
 }

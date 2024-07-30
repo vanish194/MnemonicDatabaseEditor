@@ -6,61 +6,59 @@
 class Sensor
 {
 public:
-    static Sensor *create(int sensorId,
-                          int toolId,
-                          int methodId,
-                          int sensorDescriptionId,
-                          const QString &sensorName,
-                          const QString &methodName,
-                          const QString &toolName,
-                          const QString &sensorDescription,
-                          const QString &offset);
+    static Sensor create(int sensorId,
+                         const QString &sensorName,
+                         int toolId,
+                         int methodId,
+                         int sensorDescriptionId,
+                         const QString &sensorDescription,
+                         const QString &offset,
+                         const QString &methodName);
 
-    Sensor(int sensorId,
-           int toolId,
-           int methodId,
-           int sensorDescriptionId,
-           const QString &sensorName,
-           const QString &methodName,
-           const QString &toolName,
-           const QString &sensorDescription,
-           const QString &offset);
-
-    // Getters
     int getSensorId() const;
-    int getToolId() const;
-    int getMethodId() const;
-    int getSensorDescriptionId() const;
+    void setSensorId(int value);
+
     QString getSensorName() const;
-    QString getMethodName() const;
-    QString getToolName() const;
+    void setSensorName(const QString &value);
+
+    int getToolId() const;
+    void setToolId(int value);
+
+    int getMethodId() const;
+    void setMethodId(int value);
+
+    int getSensorDescriptionId() const;
+    void setSensorDescriptionId(int value);
+
     QString getSensorDescription() const;
+    void setSensorDescription(const QString &value);
+
     QString getOffset() const;
+    void setOffset(const QString &value);
 
-    // Setters
-    void setSensorId(int newSensorId);
-    void setToolId(int newToolId);
-    void setMethodId(int newMethodId);
-    void setSensorDescriptionId(int newSensorDescriptionId);
-    void setSensorName(const QString &newSensorName);
-    void setMethodName(const QString &newMethodName);
-    void setToolName(const QString &newToolName);
-    void setSensorDescription(const QString &newSensorDescription);
-    void setOffset(const QString &newOffset);
+    QString getMethodName() const;
+    void setMethodName(const QString &value);
 
-    // Comparison operator
     bool operator==(const Sensor &other) const;
 
 private:
+    Sensor(int sensorId,
+           const QString &sensorName,
+           int toolId,
+           int methodId,
+           int sensorDescriptionId,
+           const QString &sensorDescription,
+           const QString &offset,
+           const QString &methodName);
+
     int sensorId;
+    QString sensorName;
     int toolId;
     int methodId;
     int sensorDescriptionId;
-    QString sensorName;
-    QString methodName;
-    QString toolName;
     QString sensorDescription;
     QString offset;
+    QString methodName;
 };
 
 #endif // SENSOR_H

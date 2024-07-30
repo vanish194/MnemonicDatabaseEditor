@@ -2,10 +2,9 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include <QStandardItemModel>
+#include <QTableView>
 #include "customtreeview.h"
 #include "databasemanager.h"
-#include "databasestorage.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -26,13 +25,9 @@ private slots:
     void on_actionCompareWithDatabase_triggered();
 
 private:
-    void populateTree();
-    void compareData(DatabaseStorage *newStorage);
-
     Ui::MainWindow *ui;
     DatabaseStorage *dbStorage;
     DatabaseManager *dbManager;
-    QStandardItemModel *model;
 };
 
 #endif // MAINWINDOW_H
