@@ -1,5 +1,12 @@
 #include "tool.h"
 
+// Default constructor
+Tool::Tool()
+    : toolId(0)
+    , toolDescriptionId(0)
+    , produserId(0)
+{}
+
 Tool::Tool(int id,
            const QString &name,
            int descId,

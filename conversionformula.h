@@ -6,28 +6,25 @@
 class ConversionFormula
 {
 public:
-    static ConversionFormula create(int id,
-                                    const QString &formula,
-                                    int initialUnitId,
-                                    int derivedUnitId)
-    {
-        return ConversionFormula(id, formula, initialUnitId, derivedUnitId);
-    }
+    ConversionFormula(); // Default constructor
+    ConversionFormula(int id, const QString &formula, int initialUnitId, int derivedUnitId);
 
+    // Getters
     int getFormulaId() const;
     QString getFormula() const;
     int getInitialUnitId() const;
     int getDerivedUnitId() const;
 
+    // Setters
     void setFormulaId(int id);
     void setFormula(const QString &formula);
     void setInitialUnitId(int id);
     void setDerivedUnitId(int id);
 
+    // Equality operator
     bool operator==(const ConversionFormula &other) const;
 
 private:
-    ConversionFormula(int id, const QString &formula, int initialUnitId, int derivedUnitId);
     int formulaId;
     QString formula;
     int initialUnitId;

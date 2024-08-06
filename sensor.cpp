@@ -1,5 +1,13 @@
 #include "sensor.h"
 
+// Default constructor
+Sensor::Sensor()
+    : sensorId(0)
+    , toolId(0)
+    , methodId(0)
+    , sensorDescriptionId(0)
+{}
+
 Sensor::Sensor(int sensorId,
                const QString &sensorName,
                int toolId,
@@ -17,25 +25,6 @@ Sensor::Sensor(int sensorId,
     , offset(offset)
     , methodName(methodName)
 {}
-
-Sensor Sensor::create(int sensorId,
-                      const QString &sensorName,
-                      int toolId,
-                      int methodId,
-                      int sensorDescriptionId,
-                      const QString &sensorDescription,
-                      const QString &offset,
-                      const QString &methodName)
-{
-    return Sensor(sensorId,
-                  sensorName,
-                  toolId,
-                  methodId,
-                  sensorDescriptionId,
-                  sensorDescription,
-                  offset,
-                  methodName);
-}
 
 int Sensor::getSensorId() const
 {

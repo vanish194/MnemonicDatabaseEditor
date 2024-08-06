@@ -2,9 +2,12 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include <QTableView>
-#include "customtreeview.h"
+#include "additionalmnemonicaddwindow.h"
 #include "databasemanager.h"
+#include "databasestorage.h"
+#include "mainmnemonicaddwindow.h"
+#include "sensoraddwindow.h"
+#include "tooladdwindow.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -21,13 +24,23 @@ public:
     ~MainWindow();
 
 private slots:
-    void on_actionOpenDatabase_triggered();
-    void on_actionCompareWithDatabase_triggered();
+    void handleAddItem(int itemType);
+    void handleEditItem(int itemType, int itemId);
 
 private:
     Ui::MainWindow *ui;
     DatabaseStorage *dbStorage;
     DatabaseManager *dbManager;
+
+    void openToolAddWindow();
+    void openSensorAddWindow();
+    void openMainMnemonicAddWindow();
+    void openAdditionalMnemonicAddWindow();
+
+    void editTool(int toolId);
+    void editSensor(int sensorId);
+    void editMainMnemonic(int mainMnemonicId);
+    void editAdditionalMnemonic(int additionalMnemonicId);
 };
 
 #endif // MAINWINDOW_H

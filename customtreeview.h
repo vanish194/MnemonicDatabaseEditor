@@ -1,9 +1,6 @@
 #ifndef CUSTOMTREEVIEW_H
 #define CUSTOMTREEVIEW_H
 
-#include <QAction>
-#include <QContextMenuEvent>
-#include <QMenu>
 #include <QTreeView>
 
 class CustomTreeView : public QTreeView
@@ -11,21 +8,20 @@ class CustomTreeView : public QTreeView
     Q_OBJECT
 
 public:
-    CustomTreeView(QWidget *parent = nullptr);
+    enum ItemType { ToolType, SensorType, MainMnemonicType, AdditionalMnemonicType };
+
+    explicit CustomTreeView(QWidget *parent = nullptr);
+
+signals:
+    void addItem(int itemType);
+    void editItem(int itemType, int itemId);
 
 protected:
     void contextMenuEvent(QContextMenuEvent *event) override;
 
 private slots:
-    void onAdd();
-    void onEdit();
-    void onDelete();
-
-private:
-    QMenu *contextMenu;
-    QAction *addAction;
-    QAction *editAction;
-    QAction *deleteAction;
+    void onAddItem();
+    void onEditItem();
 };
 
 #endif // CUSTOMTREEVIEW_H

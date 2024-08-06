@@ -1,5 +1,12 @@
 #include "conversionformula.h"
 
+// Default constructor
+ConversionFormula::ConversionFormula()
+    : formulaId(0)
+    , initialUnitId(0)
+    , derivedUnitId(0)
+{}
+
 ConversionFormula::ConversionFormula(int id,
                                      const QString &formula,
                                      int initialUnitId,

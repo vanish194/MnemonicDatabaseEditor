@@ -23,7 +23,6 @@ void DatabaseManager::closeDatabase()
 {
     db.close();
 }
-
 bool DatabaseManager::loadAdditionalMnemonics()
 {
     QSqlQuery query("SELECT am.*, c.company_name, u.unit_name, t.type_name "
@@ -42,7 +41,7 @@ bool DatabaseManager::loadAdditionalMnemonics()
         int typeId = query.value("type_id").toInt();
         QString typeName = query.value("type_name").toString();
 
-        dbStorage->addAdditionalMnemonic(AdditionalMnemonic::create(
+        dbStorage->addAdditionalMnemonic(AdditionalMnemonic(
             id, name, companyId, mainMnemonicId, unitId, companyName, unitName, typeId, typeName));
     }
     return true;
@@ -59,11 +58,11 @@ bool DatabaseManager::loadConversionFormulas()
     while (query.next()) {
         int id = query.value("formula_id").toInt();
         QString formula = query.value("formula").toString();
-        int initialUnitId = query.value("inital_unit_id").toInt();
+        int initialUnitId = query.value("initial_unit_id").toInt();
         int derivedUnitId = query.value("derived_unit_id").toInt();
 
         dbStorage->addConversionFormula(
-            ConversionFormula::create(id, formula, initialUnitId, derivedUnitId));
+            ConversionFormula(id, formula, initialUnitId, derivedUnitId));
     }
     return true;
 }
@@ -85,7 +84,7 @@ bool DatabaseManager::loadMainMnemonics()
         QString unitName = query.value("unit_name").toString();
 
         dbStorage->addMainMnemonic(
-            MainMnemonic::create(id, name, description, sensorId, unitId, typeId, typeName, unitName));
+            MainMnemonic(id, name, description, sensorId, unitId, typeId, typeName, unitName));
     }
     return true;
 }
@@ -107,8 +106,7 @@ bool DatabaseManager::loadSensors()
         QString offset = query.value("offset").toString();
         QString methodName = query.value("method_name").toString();
 
-        dbStorage->addSensor(
-            Sensor::create(id, name, toolId, methodId, descId, desc, offset, methodName));
+        dbStorage->addSensor(Sensor(id, name, toolId, methodId, descId, desc, offset, methodName));
     }
     return true;
 }
@@ -133,22 +131,31 @@ bool DatabaseManager::loadTools()
         int produserId = query.value("produser_id").toInt();
         QString produserName = query.value("produser_name").toString();
 
-        dbStorage->addTool(Tool::create(id,
-                                        name,
-                                        descId,
-                                        description,
-                                        length,
-                                        outerDiameter,
-                                        innerDiameter,
-                                        image,
-                                        produserId,
-                                        produserName));
+        dbStorage->addTool(Tool(id,
+                                name,
+                                descId,
+                                description,
+                                length,
+                                outerDiameter,
+                                innerDiameter,
+                                image,
+                                produserId,
+                                produserName));
     }
     return true;
 }
 
 DatabaseStorage *DatabaseManager::loadDataFromDatabase()
 {
+    int currentVersion = getDatabaseVersion();
+    const int requiredVersion = 1; // Version
+
+    if (currentVersion != requiredVersion) {
+        qDebug() << "Error: Incompatible database version. Current version:" << currentVersion
+                 << ", Required version:" << requiredVersion;
+        return nullptr;
+    }
+
     dbStorage->clearAll();
     if (!loadTools())
         return nullptr;
@@ -174,6 +181,17 @@ QStandardItemModel *DatabaseManager::getModel() const
 QStandardItemModel *DatabaseManager::getTreeModel() const
 {
     return treeModel;
+}
+
+int DatabaseManager::getDatabaseVersion() const
+{
+    QSqlQuery query("SELECT version FROM db_information ORDER BY version DESC LIMIT 1");
+    if (query.exec() && query.next()) {
+        qDebug() << "Current version = " << query.value(0).toInt();
+        return query.value(0).toInt();
+    }
+    qDebug() << "Error: Could not retrieve database version." << query.lastError().text();
+    return -1; //
 }
 
 void DatabaseManager::createTreeModel()
@@ -236,6 +254,77 @@ void DatabaseManager::createTreeModel()
                     main_item->appendRow(additional_item);
                 }
             }
+        }
+    }
+}
+
+void DatabaseManager::populateTableModel()
+{
+    model->clear();
+    model->setHorizontalHeaderLabels(
+        {"Tool Name", "Sensor Name", "Main Mnemonic", "Additional Mnemonic"});
+
+    const QList<Tool> &tools = dbStorage->getToolList();
+    const QList<Sensor> &sensors = dbStorage->getSensorList();
+    const QList<MainMnemonic> &mainMnemonics = dbStorage->getMainMnemonicList();
+    const QList<AdditionalMnemonic> &additionalMnemonics = dbStorage->getAdditionalMnemonicList();
+
+    for (const Tool &tool : tools) {
+        bool toolHasSensors = false; // Flag to check if the tool has any sensors
+        for (const Sensor &sensor : sensors) {
+            if (sensor.getToolId() == tool.getToolId()) {
+                bool sensorHasMainMnemonics
+                    = false; // Flag to check if the sensor has any main mnemonics
+                for (const MainMnemonic &mainMnemonic : mainMnemonics) {
+                    if (mainMnemonic.getSensorId() == sensor.getSensorId()) {
+                        bool mainMnemonicHasAdditionalMnemonics
+                            = false; // Flag to check if the main mnemonic has any additional mnemonics
+                        for (const AdditionalMnemonic &additionalMnemonic : additionalMnemonics) {
+                            if (additionalMnemonic.getMainMnemonicId()
+                                == mainMnemonic.getMainMnemonicId()) {
+                                // Create a row with the full hierarchy
+                                QList<QStandardItem *> items;
+                                items.append(new QStandardItem(tool.getToolName()));
+                                items.append(new QStandardItem(sensor.getSensorName()));
+                                items.append(new QStandardItem(mainMnemonic.getMainMnemonicName()));
+                                items.append(new QStandardItem(
+                                    additionalMnemonic.getAdditionalMnemonicName()));
+                                model->appendRow(items);
+                                mainMnemonicHasAdditionalMnemonics = true;
+                            }
+                        }
+                        if (!mainMnemonicHasAdditionalMnemonics) {
+                            // If no additional mnemonics, display main mnemonic
+                            QList<QStandardItem *> items;
+                            items.append(new QStandardItem(tool.getToolName()));
+                            items.append(new QStandardItem(sensor.getSensorName()));
+                            items.append(new QStandardItem(mainMnemonic.getMainMnemonicName()));
+                            items.append(new QStandardItem(""));
+                            model->appendRow(items);
+                        }
+                        sensorHasMainMnemonics = true;
+                    }
+                }
+                if (!sensorHasMainMnemonics) {
+                    // If no main mnemonics, display sensor
+                    QList<QStandardItem *> items;
+                    items.append(new QStandardItem(tool.getToolName()));
+                    items.append(new QStandardItem(sensor.getSensorName()));
+                    items.append(new QStandardItem(""));
+                    items.append(new QStandardItem(""));
+                    model->appendRow(items);
+                }
+                toolHasSensors = true;
+            }
+        }
+        if (!toolHasSensors) {
+            // If no sensors, display tool
+            QList<QStandardItem *> items;
+            items.append(new QStandardItem(tool.getToolName()));
+            items.append(new QStandardItem(""));
+            items.append(new QStandardItem(""));
+            items.append(new QStandardItem(""));
+            model->appendRow(items);
         }
     }
 }
@@ -311,16 +400,16 @@ bool DatabaseManager::addTool(const Tool &tool)
         return false;
     }
 
-    dbStorage->addTool(Tool::create(toolId,
-                                    tool.getToolName(),
-                                    tool.getToolDescriptionId(),
-                                    tool.getDescription(),
-                                    tool.getLength(),
-                                    tool.getOuterDiameter(),
-                                    tool.getInnerDiameter(),
-                                    tool.getImage(),
-                                    tool.getProduserId(),
-                                    tool.getProduserName()));
+    dbStorage->addTool(Tool(toolId,
+                            tool.getToolName(),
+                            tool.getToolDescriptionId(),
+                            tool.getDescription(),
+                            tool.getLength(),
+                            tool.getOuterDiameter(),
+                            tool.getInnerDiameter(),
+                            tool.getImage(),
+                            tool.getProduserId(),
+                            tool.getProduserName()));
     currentDataStorage = *dbStorage;
     return true;
 }
@@ -444,14 +533,14 @@ bool DatabaseManager::addSensor(const Sensor &sensor)
         return false;
     }
 
-    dbStorage->addSensor(Sensor::create(sensorId,
-                                        sensor.getSensorName(),
-                                        sensor.getToolId(),
-                                        sensor.getMethodId(),
-                                        sensor.getSensorDescriptionId(),
-                                        sensor.getSensorDescription(),
-                                        sensor.getOffset(),
-                                        sensor.getMethodName()));
+    dbStorage->addSensor(Sensor(sensorId,
+                                sensor.getSensorName(),
+                                sensor.getToolId(),
+                                sensor.getMethodId(),
+                                sensor.getSensorDescriptionId(),
+                                sensor.getSensorDescription(),
+                                sensor.getOffset(),
+                                sensor.getMethodName()));
     currentDataStorage = *dbStorage;
     return true;
 }
@@ -573,14 +662,14 @@ bool DatabaseManager::addMainMnemonic(const MainMnemonic &mainMnemonic)
         return false;
     }
 
-    dbStorage->addMainMnemonic(MainMnemonic::create(mainMnemonicId,
-                                                    mainMnemonic.getMainMnemonicName(),
-                                                    mainMnemonic.getMainMnemonicDescription(),
-                                                    mainMnemonic.getSensorId(),
-                                                    mainMnemonic.getUnitId(),
-                                                    mainMnemonic.getTypeId(),
-                                                    mainMnemonic.getTypeName(),
-                                                    mainMnemonic.getUnitName()));
+    dbStorage->addMainMnemonic(MainMnemonic(mainMnemonicId,
+                                            mainMnemonic.getMainMnemonicName(),
+                                            mainMnemonic.getMainMnemonicDescription(),
+                                            mainMnemonic.getSensorId(),
+                                            mainMnemonic.getUnitId(),
+                                            mainMnemonic.getTypeId(),
+                                            mainMnemonic.getTypeName(),
+                                            mainMnemonic.getUnitName()));
     currentDataStorage = *dbStorage;
     return true;
 }
@@ -708,15 +797,15 @@ bool DatabaseManager::addAdditionalMnemonic(const AdditionalMnemonic &additional
     }
 
     dbStorage->addAdditionalMnemonic(
-        AdditionalMnemonic::create(additionalMnemonicId,
-                                   additionalMnemonic.getAdditionalMnemonicName(),
-                                   additionalMnemonic.getCompanyId(),
-                                   additionalMnemonic.getMainMnemonicId(),
-                                   additionalMnemonic.getUnitId(),
-                                   additionalMnemonic.getCompanyName(),
-                                   additionalMnemonic.getUnitName(),
-                                   additionalMnemonic.getTypeId(),
-                                   additionalMnemonic.getTypeName()));
+        AdditionalMnemonic(additionalMnemonicId,
+                           additionalMnemonic.getAdditionalMnemonicName(),
+                           additionalMnemonic.getCompanyId(),
+                           additionalMnemonic.getMainMnemonicId(),
+                           additionalMnemonic.getUnitId(),
+                           additionalMnemonic.getCompanyName(),
+                           additionalMnemonic.getUnitName(),
+                           additionalMnemonic.getTypeId(),
+                           additionalMnemonic.getTypeName()));
     currentDataStorage = *dbStorage;
     return true;
 }
@@ -807,11 +896,11 @@ bool DatabaseManager::addConversionFormula(const ConversionFormula &conversionFo
     QSqlQuery query;
 
     query.prepare(
-        "INSERT INTO conversion_formulas (formula_id, formula, inital_unit_id, derived_unit_id) "
-        "VALUES (:formula_id, :formula, :inital_unit_id, :derived_unit_id)");
+        "INSERT INTO conversion_formulas (formula_id, formula, initial_unit_id, derived_unit_id) "
+        "VALUES (:formula_id, :formula, :initial_unit_id, :derived_unit_id)");
     query.bindValue(":formula_id", formulaId);
     query.bindValue(":formula", conversionFormula.getFormula());
-    query.bindValue(":inital_unit_id", conversionFormula.getInitialUnitId());
+    query.bindValue(":initial_unit_id", conversionFormula.getInitialUnitId());
     query.bindValue(":derived_unit_id", conversionFormula.getDerivedUnitId());
 
     if (!query.exec()) {
@@ -819,10 +908,10 @@ bool DatabaseManager::addConversionFormula(const ConversionFormula &conversionFo
         return false;
     }
 
-    dbStorage->addConversionFormula(ConversionFormula::create(formulaId,
-                                                              conversionFormula.getFormula(),
-                                                              conversionFormula.getInitialUnitId(),
-                                                              conversionFormula.getDerivedUnitId()));
+    dbStorage->addConversionFormula(ConversionFormula(formulaId,
+                                                      conversionFormula.getFormula(),
+                                                      conversionFormula.getInitialUnitId(),
+                                                      conversionFormula.getDerivedUnitId()));
     currentDataStorage = *dbStorage;
     return true;
 }
@@ -831,12 +920,12 @@ bool DatabaseManager::updateConversionFormula(const ConversionFormula &conversio
 {
     QSqlQuery query;
 
-    query.prepare("UPDATE conversion_formulas SET formula = :formula, inital_unit_id = "
-                  ":inital_unit_id, derived_unit_id = :derived_unit_id "
+    query.prepare("UPDATE conversion_formulas SET formula = :formula, initial_unit_id = "
+                  ":initial_unit_id, derived_unit_id = :derived_unit_id "
                   "WHERE formula_id = :formula_id");
     query.bindValue(":formula_id", conversionFormula.getFormulaId());
     query.bindValue(":formula", conversionFormula.getFormula());
-    query.bindValue(":inital_unit_id", conversionFormula.getInitialUnitId());
+    query.bindValue(":initial_unit_id", conversionFormula.getInitialUnitId());
     query.bindValue(":derived_unit_id", conversionFormula.getDerivedUnitId());
 
     if (!query.exec()) {

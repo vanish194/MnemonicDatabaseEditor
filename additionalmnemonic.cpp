@@ -1,5 +1,14 @@
 #include "additionalmnemonic.h"
 
+// Default constructor
+AdditionalMnemonic::AdditionalMnemonic()
+    : additionalMnemonicId(0)
+    , companyId(0)
+    , mainMnemonicId(0)
+    , unitId(0)
+    , typeId(0)
+{}
+
 AdditionalMnemonic::AdditionalMnemonic(int id,
                                        const QString &name,
                                        int companyId,
@@ -19,7 +28,6 @@ AdditionalMnemonic::AdditionalMnemonic(int id,
     , typeId(typeId)
     , typeName(typeName)
 {}
-
 int AdditionalMnemonic::getAdditionalMnemonicId() const
 {
     return additionalMnemonicId;

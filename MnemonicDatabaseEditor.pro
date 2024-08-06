@@ -12,30 +12,42 @@ CONFIG += c++17
 SOURCES += \
     abstractdatabaseelement.cpp \
     additionalmnemonic.cpp \
+    additionalmnemonicaddwindow.cpp \
     conversionformula.cpp \
     customtreeview.cpp \
     databasemanager.cpp \
     databasestorage.cpp \
     main.cpp \
     mainmnemonic.cpp \
+    mainmnemonicaddwindow.cpp \
     mainwindow.cpp \
     sensor.cpp \
-    tool.cpp
+    sensoraddwindow.cpp \
+    tool.cpp \
+    tooladdwindow.cpp
 
 HEADERS += \
     abstractdatabaseelement.h \
     additionalmnemonic.h \
+    additionalmnemonicaddwindow.h \
     conversionformula.h \
     customtreeview.h \
     databasemanager.h \
     databasestorage.h \
     mainmnemonic.h \
+    mainmnemonicaddwindow.h \
     mainwindow.h \
     sensor.h \
-    tool.h
+    sensoraddwindow.h \
+    tool.h \
+    tooladdwindow.h
 
 FORMS += \
-    mainwindow.ui
+    additionalmnemonicaddwindow.ui \
+    mainmnemonicaddwindow.ui \
+    mainwindow.ui \
+    sensoraddwindow.ui \
+    tooladdwindow.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
