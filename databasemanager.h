@@ -49,6 +49,8 @@ public:
     QStandardItemModel *getModel() const;
     QStandardItemModel *getTreeModel() const;
 
+    void populateTableModel();
+
 private:
     QSqlDatabase db;
     DatabaseStorage *dbStorage;
@@ -58,6 +60,7 @@ private:
     QStandardItemModel *model;
     QStandardItemModel *treeModel;
 
+    int getDatabaseVersion() const;
     void createTreeModel();
     bool isIdOccupied(const QString &tableName, const QString &idColumn, int id);
     int generateUniqueId(const QString &tableName, const QString &idColumn);

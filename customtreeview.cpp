@@ -1,39 +1,61 @@
 #include "customtreeview.h"
+#include <QContextMenuEvent>
+#include <QMenu>
 
 CustomTreeView::CustomTreeView(QWidget *parent)
     : QTreeView(parent)
-{
-    contextMenu = new QMenu(this);
-
-    addAction = new QAction("Add", this);
-    editAction = new QAction("Edit", this);
-    deleteAction = new QAction("Delete", this);
-
-    contextMenu->addAction(addAction);
-    contextMenu->addAction(editAction);
-    contextMenu->addAction(deleteAction);
-
-    connect(addAction, &QAction::triggered, this, &CustomTreeView::onAdd);
-    connect(editAction, &QAction::triggered, this, &CustomTreeView::onEdit);
-    connect(deleteAction, &QAction::triggered, this, &CustomTreeView::onDelete);
-}
+{}
 
 void CustomTreeView::contextMenuEvent(QContextMenuEvent *event)
 {
-    contextMenu->exec(event->globalPos());
+    QMenu menu(this);
+    QAction *addAction = menu.addAction("Add");
+    QAction *editAction = menu.addAction("Edit");
+
+    connect(addAction, &QAction::triggered, this, &CustomTreeView::onAddItem);
+    connect(editAction, &QAction::triggered, this, &CustomTreeView::onEditItem);
+
+    menu.exec(event->globalPos());
 }
 
-void CustomTreeView::onAdd()
+void CustomTreeView::onAddItem()
 {
-    // Handle add action
+    QModelIndex index = currentIndex();
+    if (!index.isValid()) {
+        emit addItem(ToolType); // Default to ToolType
+        return;
+    }
+
+    // Determine item type based on index
+    // Example logic, adapt based on your model structure
+    int itemType = ToolType; // Default type
+    if (index.data().toString().contains("Sensor")) {
+        itemType = SensorType;
+    } else if (index.data().toString().contains("MainMnemonic")) {
+        itemType = MainMnemonicType;
+    } else if (index.data().toString().contains("AdditionalMnemonic")) {
+        itemType = AdditionalMnemonicType;
+    }
+
+    emit addItem(itemType);
 }
 
-void CustomTreeView::onEdit()
+void CustomTreeView::onEditItem()
 {
-    // Handle edit action
-}
+    QModelIndex index = currentIndex();
+    if (!index.isValid())
+        return;
 
-void CustomTreeView::onDelete()
-{
-    // Handle delete action
+    int itemType = ToolType;
+    int itemId = index.data(Qt::UserRole + 1).toInt(); // Assuming ID is stored here
+
+    if (index.data().toString().contains("Sensor")) {
+        itemType = SensorType;
+    } else if (index.data().toString().contains("MainMnemonic")) {
+        itemType = MainMnemonicType;
+    } else if (index.data().toString().contains("AdditionalMnemonic")) {
+        itemType = AdditionalMnemonicType;
+    }
+
+    emit editItem(itemType, itemId);
 }

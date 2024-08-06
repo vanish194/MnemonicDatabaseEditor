@@ -6,27 +6,18 @@
 class AdditionalMnemonic
 {
 public:
-    static AdditionalMnemonic create(int id,
-                                     const QString &name,
-                                     int companyId,
-                                     int mainMnemonicId,
-                                     int unitId,
-                                     const QString &companyName,
-                                     const QString &unitName,
-                                     int typeId,
-                                     const QString &typeName)
-    {
-        return AdditionalMnemonic(id,
-                                  name,
-                                  companyId,
-                                  mainMnemonicId,
-                                  unitId,
-                                  companyName,
-                                  unitName,
-                                  typeId,
-                                  typeName);
-    }
+    AdditionalMnemonic(); // Default constructor
+    AdditionalMnemonic(int id,
+                       const QString &name,
+                       int companyId,
+                       int mainMnemonicId,
+                       int unitId,
+                       const QString &companyName,
+                       const QString &unitName,
+                       int typeId,
+                       const QString &typeName);
 
+    // Getters
     int getAdditionalMnemonicId() const;
     QString getAdditionalMnemonicName() const;
     int getCompanyId() const;
@@ -37,6 +28,7 @@ public:
     int getTypeId() const;
     QString getTypeName() const;
 
+    // Setters
     void setAdditionalMnemonicId(int id);
     void setAdditionalMnemonicName(const QString &name);
     void setCompanyId(int id);
@@ -47,18 +39,10 @@ public:
     void setTypeId(int id);
     void setTypeName(const QString &name);
 
+    // Equality operator
     bool operator==(const AdditionalMnemonic &other) const;
 
 private:
-    AdditionalMnemonic(int id,
-                       const QString &name,
-                       int companyId,
-                       int mainMnemonicId,
-                       int unitId,
-                       const QString &companyName,
-                       const QString &unitName,
-                       int typeId,
-                       const QString &typeName);
     int additionalMnemonicId;
     QString additionalMnemonicName;
     int companyId;

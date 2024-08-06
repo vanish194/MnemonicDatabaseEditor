@@ -7,6 +7,7 @@
 class Tool
 {
 public:
+    Tool(); // Default constructor
     Tool(int id,
          const QString &name,
          int descId,
@@ -18,20 +19,7 @@ public:
          int prodId,
          const QString &prodName);
 
-    static Tool create(int id,
-                       const QString &name,
-                       int descId,
-                       const QString &desc,
-                       const QString &len,
-                       const QString &outDia,
-                       const QString &inDia,
-                       const QByteArray &img,
-                       int prodId,
-                       const QString &prodName)
-    {
-        return Tool(id, name, descId, desc, len, outDia, inDia, img, prodId, prodName);
-    }
-
+    // Getters
     int getToolId() const;
     QString getToolName() const;
     int getToolDescriptionId() const;
@@ -43,6 +31,7 @@ public:
     int getProduserId() const;
     QString getProduserName() const;
 
+    // Setters
     void setToolId(int id);
     void setToolName(const QString &name);
     void setToolDescriptionId(int id);
@@ -54,6 +43,7 @@ public:
     void setProduserId(int id);
     void setProduserName(const QString &name);
 
+    // Equality operator
     bool operator==(const Tool &other) const;
 
 private:
